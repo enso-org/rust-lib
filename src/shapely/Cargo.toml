@@ -1,8 +1,19 @@
 [package]
 name    = "shapely"
 version = "0.1.0"
-authors = ["Enso Team <contact@luna-lang.org>"]
+authors = ["Enso Team <enso-dev@enso.org>"]
 edition = "2018"
+
+description  = "Automated typeclass derivation."
+readme       = "README.md"
+homepage     = "https://github.com/enso-org/rust-lib/src/shapely"
+repository   = "https://github.com/enso-org/rust-lib"
+license-file = "../../LICENSE"
+
+keywords = ["typeclass", "deriving"]
+categories = ["algorithms"]
+
+publish = true
 
 [lib]
 
