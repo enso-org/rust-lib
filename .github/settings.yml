@@ -155,6 +155,10 @@ branches:
       required_status_checks:
         # Require branches to be up to date before merging.
         strict: true
-        contexts: ["Test Libraries (macOS-latest)", "Test Libraries (ubuntu-latest)", "Test Libraries (windows-latest)", "license/cla"]
+        contexts:
+        - "Test Libraries (macOS-latest)"
+        - "Test Libraries (ubuntu-latest)"
+        - "Test Libraries (windows-latest)"
+        - "license/cla"
       enforce_admins: null
       restrictions: null
