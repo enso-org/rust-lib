@@ -74,8 +74,7 @@ In order to build these libraries you will need the following tools.
 
 - [Cargo](https://doc.rust-lang.org/cargo/getting-started/installation.html),
   the standard rust build tool.
-- [Nightly rustc]. We recommend using [rustup](https://rustup.rs/) to manage
-  your rust toolchains.
+- [Rustup](https://rustup.rs) for managing rust toolchains.
 
 ### Getting the Sources
 Given you've probably been reading this document on GitHub, you might have an
@@ -94,6 +93,15 @@ git clone https://github.com/enso-org/rust-lib.git
 
 ```
 git clone git@github.com:enso-org/rust-lib.git
+```
+
+### Getting Set Up
+You can get set up by running the following commands in the cloned repository.
+
+```bash
+rustup toolchain install nightly-2019-11-04
+rustup override set nightly-2019-11-04
+rustup component add clippy
 ```
 
 ### Building the Libraries

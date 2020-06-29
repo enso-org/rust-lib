@@ -1,6 +1,8 @@
 [workspace]
 
-members = []
+members = [
+    "src/prelude"
+]
 
 [profile.dev]
 opt-level = 0
@@ -21,3 +23,4 @@ debug     = false
 opt-level = 0
 lto       = false
 debug     = true
+

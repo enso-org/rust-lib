@@ -24,16 +24,22 @@ repository:
 labels:
   - name: "Category: Prelude"
     color: "#d1f0fd"
-    description: The prelude library.
+    description: The prelude library
   - name: "Category: Documentation"
     color: "#d1f0fd"
-    description: Repository documentation.
+    description: Repository documentation
   - name: "Category: External"
     color: "#d1f0fd"
     description: External issues
   - name: "Category: Build"
     color: "#d1f0fd"
     description: The project build and CI/CD
+  - name: "Category: Shapely"
+    color: "#d1f0fd"
+    description: The shapely library
+  - name: "Category: Macro Utils"
+    color: "#d1f0fd"
+    description: The macro-utils library
 
   - name: "Change: Breaking"
     color: "#ffdce5"
