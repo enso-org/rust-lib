@@ -24,7 +24,7 @@ repository:
 labels:
   - name: "Category: Prelude"
     color: "#d1f0fd"
-    description: The prelude library
+    description: The enso-prelude library
   - name: "Category: Documentation"
     color: "#d1f0fd"
     description: Repository documentation

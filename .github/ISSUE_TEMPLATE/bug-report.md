@@ -42,7 +42,7 @@ Please list the reproduction steps for your bug.
 For example:
 
 ```
-prelude-1.0
+enso-prelude-1.0
 macOS-10.15.5
 rustc 1.46.0-nightly (50fc24d8a 2020-06-25)
 ```

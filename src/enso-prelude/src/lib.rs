@@ -125,7 +125,7 @@ pub trait ToImpl: Sized {
 impl<T> ToImpl for T {}
 
 // TODO
-// This impl should be hidden behind a flag. Not everybody using prelude want to import nalgebra.
+// This impl should be hidden behind a flag. Not everybody using enso-prelude want to import nalgebra.
 impl <T,R,C,S> TypeDisplay for nalgebra::Matrix<T,R,C,S>
 where T:nalgebra::Scalar, R:nalgebra::DimName, C:nalgebra::DimName {
     fn type_display() -> String {
