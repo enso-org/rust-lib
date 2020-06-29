@@ -16,6 +16,7 @@ categories = ["algorithms"]
 publish = true
 
 [lib]
+crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 shapely  = { version = "0.1.0" , path = "../shapely" }
@@ -77,3 +78,6 @@ features = [
   'DomRect',
   'AddEventListenerOptions'
 ]
+
+[dev-dependencies]
+wasm-bindgen-test = "0.2"

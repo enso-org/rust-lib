@@ -8,6 +8,7 @@ on:
 
 env:
   wasmpackVersion: 0.8.1
+  nodeVersion: 12.18.0
 
 jobs:
   test:
@@ -28,6 +29,15 @@ jobs:
         with:
           toolchain: nightly-2019-11-04
           override: true
+      - name: Install wasm-pack
+        uses: actions-rs/cargo@v1
+        with:
+          command: install
+          args: wasm-pack --version ${{ env.wasmpackVersion }}
+      - name: Install Node
+        uses: actions/setup-node@v1
+        with:
+          node-version: ${{ env.nodeVersion }}
 
       # Caches
       - name: Cache Cargo Registry
@@ -43,8 +53,24 @@ jobs:
           key: ${{ runner.os }}-cargo-build-${{ hashFiles('**Cargo.toml') }}
           restore-keys: ${{ runner.os }}-cargo-build
 
+      # Lint
+      - name: Lint Code
+        shell: bash
+        run: |
+          cargo clippy
+
       # Tests
-      - name: Test Libraries
+      - name: Test Native
         uses: actions-rs/cargo@v1
         with:
           command: test
+      - name: Test WASM
+        shell: bash
+        run: |
+          cd src
+          for dir in `ls`; do
+              cd $dir;
+              wasm-pack test --node;
+              cd ..;
+          done;
+          cd ..

@@ -4,7 +4,7 @@ members = [
     "src/macro-utils",
     "src/enso-prelude",
     "src/shapely",
-    "src/shapely-macros"
+    "internal/shapely-macros"
 ]
 
 [profile.dev]

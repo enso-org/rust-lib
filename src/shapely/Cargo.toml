@@ -16,15 +16,18 @@ categories = ["algorithms"]
 publish = true
 
 [lib]
+crate-type = ["cdylib", "rlib"]
 
 [features]
 default = []
 
 [dependencies]
-shapely-macros = { version = "0.1.0" , path = "../shapely-macros" }
+shapely-macros = { version = "0.1.0" , path = "../../internal/shapely-macros" }
 paste          = { version = "0.1"                        }
 derivative     = { version = "1.0.3"                      }
 shrinkwraprs   = { version = "0.3.0"                      }
 
 [dev-dependencies]
 enso-prelude = { version = "0.1.0" , path ="../enso-prelude" }
+wasm-bindgen-test = "0.2"
+

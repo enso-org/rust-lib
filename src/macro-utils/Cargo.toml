@@ -11,9 +11,12 @@ repository   = "https://github.com/enso-org/rust-lib"
 license-file = "../../LICENSE"
 
 keywords = ["macro", "utility"]
-categories = ["algorithms"]
+categories = ["development-tools::procedural-macro-helpers"]
 
 publish = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 proc-macro2    = "1.0"
@@ -26,3 +29,6 @@ features = [
   'full', # for syn::ItemStruct
   'visit'
 ]
+
+[dev-dependencies]
+wasm-bindgen-test = "0.2"
