@@ -66,15 +66,21 @@ jobs:
         with:
           toolchain: nightly-2019-11-04
           override: true
-      - name: Install wasm-pack
-        uses: actions-rs/cargo@v1
-        with:
-          command: install
-          args: wasm-pack --version ${{ env.wasmpackVersion }}
       - name: Install Node
         uses: actions/setup-node@v1
         with:
           node-version: ${{ env.nodeVersion }}
+      - name: Install wasm-pack
+        # We could use cargo install wasm-pack, but that takes 3.5 minutes
+        # compared to a few seconds.
+        env:
+          WASMPACKURL: https://github.com/rustwasm/wasm-pack/releases/download/v${{ env.wasmpackVersion }}
+          WASMPACKDIR: wasm-pack-v{{ env.wasmpackVersion }}-x86_64-unknown-linux-musl
+        shell: bash
+        run: |
+          curl -L "$WASMPACKURL/$WASMPACKDIR.tar.gz" | tar -xz -C .
+          mv $WASMPACKDIR/wasm-pack ~/.cargo/bin
+          rm -r $WASMPACKDIR
 
       # Caches
       - name: Cache Cargo Registry
