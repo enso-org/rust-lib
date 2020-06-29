@@ -1,7 +1,10 @@
 [workspace]
 
 members = [
-    "src/prelude"
+    "src/macro-utils",
+    "src/prelude",
+    "src/shapely",
+    "src/shapely-macros"
 ]
 
 [profile.dev]

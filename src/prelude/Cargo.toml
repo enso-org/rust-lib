@@ -7,7 +7,7 @@ edition = "2018"
 [lib]
 
 [dependencies]
-shapely  = { version = "0.1.0"  , path = "../shapely/impl" }
+shapely  = { version = "0.1.0" , path = "../shapely" }
 
 boolinator   = "2.4.0"
 derivative   = "1.0.3"

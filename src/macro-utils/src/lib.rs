@@ -1,4 +1,4 @@
-//! A number of helper functions meant to be used in the procedural macros
+//! A number of helper functions meant to be used in the procedural shapely-macros
 //! definitions.
 
 #![warn(missing_docs)]
