@@ -1,7 +1,7 @@
 #![feature(generators)]
 #![feature(type_alias_impl_trait)]
 
-use shapely::*;
+use enso_shapely::*;
 
 
 

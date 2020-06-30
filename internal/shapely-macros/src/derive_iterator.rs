@@ -267,7 +267,7 @@ impl DerivingIterator<'_> {
             let iter = if variant_depends_on(var, target_param) {
                 quote!(elem.into_iter())
             } else {
-                quote!(shapely::EmptyIterator::new())
+                quote!(enso_shapely::EmptyIterator::new())
             };
             quote!(#ident::#con(elem) => Box::new(#iter))
         });
@@ -298,7 +298,7 @@ impl DerivingIterator<'_> {
         }).collect_vec();
 
         // enso-shapely::EmptyIterator::new()
-        let empty_body = quote! { shapely::EmptyIterator::new() };
+        let empty_body = quote! { enso_shapely::EmptyIterator::new() };
 
         // enso-shapely::GeneratingIterator(move || {
         //     yield &t.foo;
@@ -307,7 +307,7 @@ impl DerivingIterator<'_> {
         //     yield &mut t.foo;
         // })
         let body = quote! {
-            shapely::GeneratingIterator
+            enso_shapely::GeneratingIterator
             (move || { #(#yield_fields)* })
         };
 

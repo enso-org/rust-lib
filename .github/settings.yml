@@ -156,11 +156,12 @@ branches:
         # Require branches to be up to date before merging.
         strict: true
         contexts:
+        - "Check"
+        - "Lint"
         - "Test Native (macOS-latest)"
         - "Test Native (ubuntu-latest)"
         - "Test Native (windows-latest)"
         - "Test WASM"
-        - "Lint"
         - "license/cla"
       enforce_admins: null
       restrictions: null
