@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 
-const fs    = require('fs').promises
-const fss   = require('fs')
-const spawn = require('child_process').spawn
-const path  = require('path')
+const fs        = require('fs').promises
+const fss       = require('fs')
+const spawn     = require('child_process').spawn
+const spawnSync = require('child_process').spawnSync
+const path      = require('path')
 
 let args = process.argv.slice(2)
 
@@ -19,6 +20,16 @@ function run(cmd, args) {
     })
 }
 
+function runSync(cmd, args) {
+    console.log(`Executing '${cmd} ${args.join(' ')}'`)
+
+    let proc = spawnSync(cmd, args, {stdio: 'inherit', shell: true})
+
+    if (proc.status != 0) {
+        process.exit(code)
+    }
+}
+
 async function testLibrary() {
     cwd = process.cwd()
     console.log(`In directory ${cwd}`)
@@ -31,7 +42,7 @@ async function testLibrary() {
         process.chdir(path.join(cwd, 'impl'))
     }
 
-    await run('wasm-pack', ['test', '--node'])
+    await runSync('wasm-pack', ['test', '--node'])
 }
 
 async function withCwd(dir, fn) {

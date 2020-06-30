@@ -8,9 +8,9 @@ pub use enso_shapely::CloneRef;
 // === CloneRef ===
 // ================
 
-/// Clone for proc-macro-mutable structures. This trait can be implemented only if mutating one
+/// Clone for native-only-macro-mutable structures. This trait can be implemented only if mutating one
 /// structure will be reflected in all of its clones. Please note that it does not mean that all the
-/// fields needs to provide proc-macro mutability as well. For example, a structure can remember it's
+/// fields needs to provide native-only mutability as well. For example, a structure can remember it's
 /// creation time and store it as `f32`. As long as it cannot be mutated, the structure can
 /// implement `CloneRef`. In order to guide the auto-deriving mechanism, it is advised to wrap all
 /// immutable fields in the `Immutable` newtype.
