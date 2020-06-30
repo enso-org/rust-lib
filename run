@@ -31,6 +31,8 @@ function runSync(cmd, args) {
 }
 
 function testLibrary() {
+    let libImplDirName = 'impl'
+
     cwd = process.cwd()
     console.log(`In directory ${cwd}`)
 
@@ -38,8 +40,8 @@ function testLibrary() {
         .filter(f => f.isDirectory())
         .map(d => d.name)
 
-    if (containedDirs.includes('impl')) {
-        process.chdir(path.join(cwd, 'impl'))
+    if (containedDirs.includes(libImplDirName)) {
+        process.chdir(path.join(cwd, libImplDirName))
     }
 
     runSync('wasm-pack', ['test', '--node'])
