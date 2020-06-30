@@ -178,20 +178,4 @@ jobs:
 
       # Tests
       - name: Test WASM
-        shell: bash
-        run: |
-          for dir in `ls `; do
-              if [[ -d "$dir" ]]; then
-                  cd $dir;
-
-                  if [[ -d "impl" ]]; then
-                      cd impl;
-                      wasm-pack test --node
-                      cd ..;
-                  else
-                      wasm-pack test --node
-                  fi
-
-                  cd ..;
-              fi
-          done
+        run: ./run --test-wasm
