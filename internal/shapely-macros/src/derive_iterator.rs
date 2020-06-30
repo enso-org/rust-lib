@@ -1,11 +1,11 @@
 use crate::prelude::*;
 
-use macro_utils::fields_list;
-use macro_utils::field_ident_token;
-use macro_utils::type_depends_on;
-use macro_utils::type_matches;
-use macro_utils::ty_path_type_args;
-use macro_utils::variant_depends_on;
+use enso_macro_utils::fields_list;
+use enso_macro_utils::field_ident_token;
+use enso_macro_utils::type_depends_on;
+use enso_macro_utils::type_matches;
+use enso_macro_utils::ty_path_type_args;
+use enso_macro_utils::variant_depends_on;
 use boolinator::Boolinator;
 use inflector::Inflector;
 use itertools::Itertools;
@@ -274,7 +274,7 @@ impl DerivingIterator<'_> {
 
         // match t {
         //     Foo::Con1(elem) => Box::new(elem.into_iter()),
-        //     Foo::Con2(elem) => Box::new(shapely::EmptyIterator::new()),
+        //     Foo::Con2(elem) => Box::new(enso-shapely::EmptyIterator::new()),
         // }
         let iter_body = quote!( match t {  #(#arms,)*  } );
         OutputParts{iterator_tydefs,iter_body,iterator_params}
@@ -297,13 +297,13 @@ impl DerivingIterator<'_> {
             field.yield_value(self.is_mut)
         }).collect_vec();
 
-        // shapely::EmptyIterator::new()
+        // enso-shapely::EmptyIterator::new()
         let empty_body = quote! { shapely::EmptyIterator::new() };
 
-        // shapely::GeneratingIterator(move || {
+        // enso-shapely::GeneratingIterator(move || {
         //     yield &t.foo;
         // })
-        // shapely::GeneratingIterator(move || {
+        // enso-shapely::GeneratingIterator(move || {
         //     yield &mut t.foo;
         // })
         let body = quote! {
@@ -339,13 +339,13 @@ impl DerivingIterator<'_> {
 
             // pub fn foo_iterator<'t, T>
             // (t: &'t Foo<T>) -> FooIterator<'t, T> {
-            //    shapely::GeneratingIterator(move || {
+            //    enso-shapely::GeneratingIterator(move || {
             //        yield &t.foo;
             //    })
             // }
             // pub fn foo_iterator_mut<'t, T>
             // (t: &'t mut Foo<T>) -> FooIteratorMut<'t, T> {
-            //    shapely::GeneratingIterator(move || {
+            //    enso-shapely::GeneratingIterator(move || {
             //        yield &t.foo;
             //    })
             // }

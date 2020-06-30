@@ -1,9 +1,9 @@
 use crate::prelude::*;
 
-use macro_utils::field_names;
-use macro_utils::identifier_sequence;
-use macro_utils::index_sequence;
-use macro_utils::path_matching_ident;
+use enso_macro_utils::field_names;
+use enso_macro_utils::identifier_sequence;
+use enso_macro_utils::index_sequence;
+use enso_macro_utils::path_matching_ident;
 use syn::Attribute;
 use syn::DeriveInput;
 use syn::Data;
@@ -200,7 +200,7 @@ pub fn derive
     // Where clause must contain both user-provided bounds and bounds inherent due to type
     // declaration-level where clause.
     let user_requested_bounds = decl.attrs.iter().filter_map(clone_ref_bounds).flatten();
-    let mut where_clause      = macro_utils::new_where_clause(user_requested_bounds);
+    let mut where_clause      = enso_macro_utils::new_where_clause(user_requested_bounds);
     for inherent_where_clause in inherent_where_clause_opt {
         where_clause.predicates.extend(inherent_where_clause.predicates.iter().cloned())
     }

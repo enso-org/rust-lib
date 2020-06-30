@@ -100,7 +100,7 @@
 ///
 /// **Note**
 /// Both the implementation as well as usage syntax of this macro will be nicer if it was
-/// implemented as procedural macro. However, no IDE supports expansion of procedural shapely-macros
+/// implemented as procedural macro. However, no IDE supports expansion of procedural enso-shapely-macros
 /// currently, so it was implemented as macro rules instead.
 #[macro_export]
 macro_rules! shared {

@@ -1,5 +1,5 @@
 //! This crate defines a custom derive macro `Iterator`. Should not be used
-//! directly, but only through `shapely` crate, as it provides utilities
+//! directly, but only through `enso-shapely` crate, as it provides utilities
 //! necessary for the generated code to compile.
 
 #![feature(bool_to_option)]
@@ -20,7 +20,7 @@ mod derive_iterator;
 mod overlappable;
 
 mod prelude {
-    pub use macro_utils::repr;
+    pub use enso_macro_utils::repr;
     pub use proc_macro2::Span;
     pub use proc_macro2::TokenStream;
     pub use quote::quote;

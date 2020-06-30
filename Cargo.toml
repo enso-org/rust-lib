@@ -1,9 +1,9 @@
 [workspace]
 
 members = [
-    "src/macro-utils",
+    "src/enso-macro-utils",
     "src/enso-prelude",
-    "src/shapely",
+    "src/enso-shapely",
     "internal/shapely-macros"
 ]
 

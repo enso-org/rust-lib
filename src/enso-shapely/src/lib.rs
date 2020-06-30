@@ -26,7 +26,7 @@ pub use generator::GeneratingIterator;
 use shrinkwraprs::Shrinkwrap;
 
 
-/// Replaces the first argument with the second one. It is useful when creating shapely-macros which match
+/// Replaces the first argument with the second one. It is useful when creating enso-shapely-macros which match
 /// a pattern and you want to generate as many repetitions of a token as there was matches. For
 /// example, when matching `$($name:ident)*`, you may want to generate as many empty tuples as
 /// the number of names matched. You can do it by using `$(replace!{$name,()})*`.

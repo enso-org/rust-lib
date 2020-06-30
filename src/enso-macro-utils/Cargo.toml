@@ -1,5 +1,5 @@
 [package]
-name    = "macro-utils"
+name    = "enso-macro-utils"
 version = "0.1.0"
 authors = ["Enso Team <enso-dev@enso.org>"]
 edition = "2018"

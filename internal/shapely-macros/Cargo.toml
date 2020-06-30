@@ -22,7 +22,7 @@ proc-macro = true
 default = []
 
 [dependencies]
-macro-utils  = { version = "0.1.0"  , path = "../../src/macro-utils" }
+enso-macro-utils  = { version = "0.1.0"  , path = "../../src/enso-macro-utils" }
 proc-macro2  = "1.0"
 quote        = "1.0"
 Inflector    = "0.11.4"

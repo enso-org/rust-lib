@@ -1,6 +1,6 @@
 
 use crate::*;
-pub use shapely::CloneRef;
+pub use enso_shapely::CloneRef;
 
 
 

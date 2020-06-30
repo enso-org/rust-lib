@@ -1,4 +1,4 @@
-//! This macro defines set of common shapely-macros which are useful across different projects.
+//! This macro defines set of common enso-shapely-macros which are useful across different projects.
 
 
 /// Allows for nicer definition of impls, similar to what Haskell or Scala does. Reduces the needed
