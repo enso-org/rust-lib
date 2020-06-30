@@ -1,7 +1,7 @@
-//! Helper code meant to be used by the code generated through usage of enso-shapely-macros
-//! from `enso-shapely-enso-shapely-macros` crate.
+//! Helper code meant to be used by the code generated through usage of enso-enso-shapely-macros
+//! from `enso-shapely-enso-enso-shapely-macros` crate.
 
-pub use shapely_macros::*;
+pub use enso_shapely_macros::*;
 
 use derivative::Derivative;
 use std::ops::Generator;
