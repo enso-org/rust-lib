@@ -75,6 +75,9 @@ In order to build these libraries you will need the following tools.
 - [Cargo](https://doc.rust-lang.org/cargo/getting-started/installation.html),
   the standard rust build tool.
 - [Rustup](https://rustup.rs) for managing rust toolchains.
+- [Node](https://nodejs.org/en/) if you want to test the libraries with WASM.
+- [wasm-pack](https://github.com/rustwasm/wasm-pack) for building WASM versions
+  of the libraries and running WASM tests.
 
 ### Getting the Sources
 Given you've probably been reading this document on GitHub, you might have an

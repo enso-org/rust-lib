@@ -14,8 +14,7 @@
 
 ### Enso Rust Libraries
 <p>
-  <a href="https://github.com/enso-org/rust-lib/actions">
-    <img src="https://github.com/enso-org/rust-lib/workflows/CI/badge.svg"
+  <a href="https://github.com/enso-org/rust-lib/actions"> <img src="https://github.com/enso-org/rust-lib/workflows/CI/badge.svg"
          alt="Actions Status">
   </a>
   <a href="https://github.com/enso-org/rust-lib/blob/main/LICENSE">
@@ -59,7 +58,7 @@ and free to use. We are committed to a fully transparent development process and
 highly appreciate every contribution.
 
 If you'd like to help us out by contributing to this repository, please take a
-look at the [contributing guide](./contributing.md).
+look at the [contributing guide](./docs/CONTRIBUTING.md).
 
 <a href="https://github.com/enso-org/enso/graphs/contributors">
   <img src="https://opencollective.com/enso-language/contributors.svg?width=890&button=false">
