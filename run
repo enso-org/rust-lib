@@ -4,21 +4,19 @@ const fss       = require('fs')
 const spawnSync = require('child_process').spawnSync
 const path      = require('path')
 
+const libImplDirName = 'impl'
+
 let args = process.argv.slice(2)
 
 function runSync(cmd, args) {
     console.log(`Executing '${cmd} ${args.join(' ')}'`)
-
     let proc = spawnSync(cmd, args, {stdio: 'inherit', shell: true})
-
     if (proc.status != 0) {
         process.exit(code)
     }
 }
 
 function testLibrary() {
-    let libImplDirName = 'impl'
-
     cwd = process.cwd()
     console.log(`In directory ${cwd}`)
 
