@@ -59,7 +59,7 @@ use std::cell::UnsafeCell;
 // =================
 
 /// A zero-overhead newtype which provides immutable access to its content. Of course this does not
-/// apply to internal mutability of the wrapped data. A good use case of this structure is when you
+/// apply to native-only mutability of the wrapped data. A good use case of this structure is when you
 /// want to pass an ownership to a structure, allow access all its public fields, but do not allow
 /// their modification.
 #[derive(Clone,Copy,Default)]

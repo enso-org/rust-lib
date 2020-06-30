@@ -52,6 +52,10 @@ a _tag_ in the repository using the following format: `libname-version` where:
 - `libname` is the name of the library (as it is imported).
 - `version` is the version string using the [semver](https://semver.org/)
   version scheme.
+  
+As these crates have sometimes-complex dependencies, it is recommended to use
+[cargo-publish-all](https://gitlab.com/torkleyy/cargo-publish-all) to publish
+these crates in concert as needed.
 
 ### Contributing to This Repository
 Enso is a community-driven open source project which is and will always be open

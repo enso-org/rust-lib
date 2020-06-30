@@ -22,7 +22,7 @@ crate-type = ["cdylib", "rlib"]
 default = []
 
 [dependencies]
-shapely-macros = { version = "0.1.0" , path = "../../internal/shapely-macros" }
+shapely-macros = { version = "0.1.0" , path = "../../native-only/shapely-macros" }
 paste          = { version = "0.1"                        }
 derivative     = { version = "1.0.3"                      }
 shrinkwraprs   = { version = "0.3.0"                      }
