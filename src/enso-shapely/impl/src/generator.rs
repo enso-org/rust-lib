@@ -1,5 +1,5 @@
-//! Helper code meant to be used by the code generated through usage of enso-macros
-//! from `enso-shapely-enso-macros` crate.
+//! Helper code meant to be used by the code generated through usage of macros
+//! from `enso-shapely-macros` crate.
 
 pub use enso_shapely_macros::*;
 
