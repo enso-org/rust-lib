@@ -1,10 +1,10 @@
 [workspace]
 
 members = [
-    "proc-macro/enso-shapely-macros",
     "src/enso-macro-utils",
     "src/enso-prelude",
-    "src/enso-shapely"
+    "src/enso-shapely/impl",
+    "src/enso-shapely/macros"
 ]
 
 [profile.dev]

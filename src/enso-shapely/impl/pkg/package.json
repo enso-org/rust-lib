@@ -1,0 +1,22 @@
+{
+  "name": "shapely",
+  "collaborators": [
+    "Enso Team <enso-dev@enso.org>"
+  ],
+  "description": "Automated typeclass derivation.",
+  "version": "0.1.0",
+  "license": "SEE LICENSE IN ../../LICENSE",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/enso-org/rust-lib"
+  },
+  "files": [
+    "shapely_bg.wasm",
+    "shapely.js",
+    "shapely.d.ts"
+  ],
+  "module": "shapely.js",
+  "homepage": "https://github.com/enso-org/rust-lib/src/shapely",
+  "types": "shapely.d.ts",
+  "sideEffects": "false"
+}

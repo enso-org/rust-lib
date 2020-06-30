@@ -1,4 +1,4 @@
-//! A number of helper functions meant to be used in the procedural enso-enso-shapely-macros
+//! A number of helper functions meant to be used in the procedural enso-macros
 //! definitions.
 
 #![warn(missing_docs)]
