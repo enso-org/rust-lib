@@ -44,7 +44,7 @@ jobs:
           restore-keys: ${{ runner.os }}-cargo-build
 
       # Check
-      - name: check Code
+      - name: Check Code
         uses: actions-rs/cargo@v1
         with:
           command: check
