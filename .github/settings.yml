@@ -32,6 +32,9 @@ labels:
     color: "#d1f0fd"
     description: External issues
 
+  - name: "Category: Automata"
+    color: "#d1f0fd"
+    description: The automata library
   - name: "Category: Data"
     color: "#d1f0fd"
     description: The data library
