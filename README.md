@@ -7,9 +7,6 @@
           width="136"
       />
   </a>
-  <br/>
-  <br/>
-  <br/>
 </p>
 
 ### Enso Rust Libraries
