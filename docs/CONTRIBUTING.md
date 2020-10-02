@@ -85,6 +85,8 @@ In order to build these libraries you will need the following tools.
 - [wasm-pack](https://github.com/rustwasm/wasm-pack) for building WASM versions
   of the libraries and running WASM tests.
 
+We only support the current LTS node version. This is currently `v12.18.4`.
+
 ### Getting the Sources
 
 Given you've probably been reading this document on GitHub, you might have an
@@ -105,7 +107,7 @@ git clone https://github.com/enso-org/rust-lib.git
 git clone git@github.com:enso-org/rust-lib.git
 ```
 
-### Getting Set Up
+### Getting Set Up (Rust)
 
 You can get set up by running the following commands in the cloned repository.
 
