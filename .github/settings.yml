@@ -22,31 +22,45 @@ repository:
 
 # The repository labels configuration
 labels:
-  - name: "Category: Prelude"
+  - name: "Category: Build"
     color: "#d1f0fd"
-    description: The enso-prelude library
+    description: The project build and CI/CD
   - name: "Category: Documentation"
     color: "#d1f0fd"
     description: Repository documentation
   - name: "Category: External"
     color: "#d1f0fd"
     description: External issues
-  - name: "Category: Build"
+
+  - name: "Category: Data"
     color: "#d1f0fd"
-    description: The project build and CI/CD
-  - name: "Category: Shapely"
+    description: The data library
+  - name: "Category: Generics"
     color: "#d1f0fd"
-    description: The enso-shapely library
+    description: The generics library
+  - name: "Category: Logger"
+    color: "#d1f0fd"
+    description: The logging library
   - name: "Category: Macro Utils"
     color: "#d1f0fd"
-    description: The enso-macro-utils library
+    description: The macro-utils library
+  - name: "Category: Optics"
+    color: "#d1f0fd"
+    description: The optics library
+  - name: "Category: Prelude"
+    color: "#d1f0fd"
+    description: The prelude library
+  - name: "Category: Shapely"
+    color: "#d1f0fd"
+    description: The shapely library
 
   - name: "Change: Breaking"
     color: "#ffdce5"
     description: A change that will break a public API or user-facing behaviour
   - name: "Change: Non-Breaking"
     color: "#ffdce5"
-    description: A change that will not break a public API or user-facing behaviour
+    description:
+      A change that will not break a public API or user-facing behaviour
 
   - name: "Difficulty: Beginner"
     color: "#d1e9c4"
@@ -156,12 +170,13 @@ branches:
         # Require branches to be up to date before merging.
         strict: true
         contexts:
-        - "Check"
-        - "Lint"
-        - "Test Native (macOS-latest)"
-        - "Test Native (ubuntu-latest)"
-        - "Test Native (windows-latest)"
-        - "Test WASM"
-        - "license/cla"
+          - "Check"
+          - "Lint"
+          - "Test Native (macOS-latest)"
+          - "Test Native (ubuntu-latest)"
+          - "Test Native (windows-latest)"
+          - "Test WASM"
+          - "Docs Check"
+          - "license/cla"
       enforce_admins: null
       restrictions: null

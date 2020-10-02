@@ -13,6 +13,7 @@
 </p>
 
 ### Enso Rust Libraries
+
 <p>
   <a href="https://github.com/enso-org/rust-lib/actions"> <img src="https://github.com/enso-org/rust-lib/workflows/CI/badge.svg"
          alt="Actions Status">
@@ -44,15 +45,17 @@ This repository contains the rust libraries that are used to develop Enso. These
 are published to [crates.io](https://crates.io).
 
 ### Releases
+
 Releases are made for the individual libraries in this repository and are made
-available on [crates.io](https://crates.io). Each release must correspond to
-a _tag_ in the repository using the following format: `libname-version` where:
+available on [crates.io](https://crates.io). Each release must correspond to a
+_tag_ in the repository using the following format: `libname-version` where:
 
 - `libname` is the name of the library (as it is imported).
 - `version` is the version string using the [semver](https://semver.org/)
   version scheme.
 
 ### Contributing to This Repository
+
 Enso is a community-driven open source project which is and will always be open
 and free to use. We are committed to a fully transparent development process and
 highly appreciate every contribution.

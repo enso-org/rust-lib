@@ -1,4 +1,5 @@
 # Security Policy
+
 This document outlines the security policy for all of the libraries in this
 repository.
 
@@ -14,16 +15,18 @@ repository.
 <!-- /MarkdownTOC -->
 
 ## Supported Versions
+
 Security updates for Enso are provided for the versions shown below with a
 :white_check_mark: next to them. No other versions have security updates
 provided.
 
 | Version          | Supported          |
-|------------------|--------------------|
+| ---------------- | ------------------ |
 | `latest release` | :white_check_mark: |
 | `*`              | :x:                |
 
 ## Reporting a Vulnerability
+
 If you believe that you've found a security vulnerability in one of the
 libraries maintained in this repository, please contact
 [security@enso.org](mailto:security@enso.org) and provide details of the bug.

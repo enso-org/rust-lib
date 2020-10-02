@@ -1,4 +1,5 @@
 # Contributing to This Repository
+
 Thank you for your interest in contributing to these libraries! We believe that
 only through community involvement can we make them the best they can be! There
 are a whole host of ways to contribute, and every single one is appreciated. The
@@ -19,6 +20,7 @@ All contributions to Enso should be in keeping with our
 [Code of Conduct](https://github.com/enso-org/enso/docs/CODE_OF_CONDUCT.md).
 
 ## The Contributor License Agreement
+
 As part of your first contribution to this repository, you need to accept the
 Contributor License Agreement. You will automatically be asked to sign the CLA
 when you make your first pull request.
@@ -30,6 +32,7 @@ The CLA you sign applies to all repositories associated with the Enso project,
 so you will only have to sign it once at the start of your contributions.
 
 ## Issues
+
 If you're wanting to get involved with Enso's development and are looking for
 somewhere to start, you can check out the following tags in our issues:
 
@@ -40,6 +43,7 @@ You can use the "Size" and "Difficulty" labels that should be assigned to every
 issue to get a better idea of how much work a given issue might be.
 
 ## Bug Reports
+
 While it's never great to find a bug, they are a reality of software and
 software development! We can't fix or improve on the things that we don't know
 about, so report as many bugs as you can! If you're not sure whether something
@@ -66,10 +70,12 @@ The reproduction steps and the version information are particularly important,
 as the more easily we can reproduce it, the faster we can fix the bug!
 
 ## Hacking on These Libraries
+
 This will get you up and running for working on these libraries, with only a
 minimal amount of setup required.
 
 ### System Requirements
+
 In order to build these libraries you will need the following tools.
 
 - [Cargo](https://doc.rust-lang.org/cargo/getting-started/installation.html),
@@ -80,6 +86,7 @@ In order to build these libraries you will need the following tools.
   of the libraries and running WASM tests.
 
 ### Getting the Sources
+
 Given you've probably been reading this document on GitHub, you might have an
 inkling where to look!. You can clone Enso using two methods:
 
@@ -99,6 +106,7 @@ git clone git@github.com:enso-org/rust-lib.git
 ```
 
 ### Getting Set Up
+
 You can get set up by running the following commands in the cloned repository.
 
 ```bash
@@ -108,17 +116,19 @@ rustup component add clippy
 ```
 
 ### Building the Libraries
+
 Building these libraries is as simple as using the cargo build tool. You can run
 `cargo build` to build all of the libraries, or `cargo build $lib`, where `$lib`
 is the name of one of the libraries in this project.
 
 #### Troubleshooting
+
 If you are having issues building the libraries, please check the list below
 before filing an issue with us.
 
-- `error[E0554]`: `#![feature]` may not be used on the $chan release channel`:
-  The version of `rustc` seen by `cargo` is not a nightly build, and a nightly
-  build is required.
+- `error[E0554]`: `#![feature]` may not be used on the \$chan release
+  channel`: The version of `rustc`seen by`cargo` is not a nightly build, and a
+  nightly build is required.
 - **Compile Errors:** Please check that you are on the correct `rustc` nightly
   (`nightly-2019-11-04`).
 
@@ -127,8 +137,10 @@ If your problem was not listed above, please
 in our issue tracker and we will get back to you as soon as possible.
 
 ## Pull Requests
+
 Pull Requests are the primary method for making changes to these libraries.
-GitHub has [fantastic documentation](https://help.github.com/articles/about-pull-requests/)
+GitHub has
+[fantastic documentation](https://help.github.com/articles/about-pull-requests/)
 on using the pull request feature. This repo uses the 'fork-and-pull' model of
 development. It is as described
 [here](https://help.github.com/articles/about-collaborative-development-models/)
@@ -152,7 +164,8 @@ every push to make sure that you can't forget.
   please feel free to ask for a specific person if you've worked with them in a
   specific area before!
 - If you have questions, or would like to begin the review process before your
-  PR is 'done', please use the [Draft Pull Requests](https://github.blog/2019-02-14-introducing-draft-pull-requests/)
+  PR is 'done', please use the
+  [Draft Pull Requests](https://github.blog/2019-02-14-introducing-draft-pull-requests/)
   feature on GitHub. Doing so will allow you to make use of our CI
   infrastructure as part of your development process.
 
@@ -162,6 +175,7 @@ please feel free to discuss the suggestions and comments! We can only achieve
 the best results through open collaboration.
 
 ## Issue Triage
+
 Sometimes issues can be left open long after the bug has been fixed. Other
 times, a bug might go stale because something has changed in the meantime.
 
@@ -179,4 +193,5 @@ If you're looking for somewhere to start, take a look at the
 issue label, as well as the
 [Status: Help Wanted](https://github.com/enso-org/rust-lib/labels/Status%3A%20Help%20Wanted)
 and
-[Status: Good First Issue](https://github.com/enso-org/rust-lib/labels/Status%3A%20Good%20First%20Issue) labels.
+[Status: Good First Issue](https://github.com/enso-org/rust-lib/labels/Status%3A%20Good%20First%20Issue)
+labels.

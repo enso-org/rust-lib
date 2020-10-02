@@ -1,5 +1,12 @@
 
 ##########
+## Node ##
+##########
+
+node_modules/
+package-lock.json
+
+##########
 ## Rust ##
 ##########
 
@@ -23,3 +30,4 @@ pkg/
 .vscode/
 *.swp
 .projections.json
+.nvmrc
