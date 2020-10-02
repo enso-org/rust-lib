@@ -160,6 +160,21 @@ As the patch paths care able to point _outside_ the current Cargo project, you
 can check out this repository and the other one side by side and set the patch
 paths for the libraries you want to develop.
 
+The following is an example:
+
+```toml
+[patch.crates-io]
+enso-automata       = { path = "../rust-lib/src/automata"       }
+enso-data           = { path = "../rust-lib/src/data"           }
+enso-generics       = { path = "../rust-lib/src/generics"       }
+enso-logger         = { path = "../rust-lib/src/logger"         }
+enso-macro-utils    = { path = "../rust-lib/src/macro-utils"    }
+enso-optics         = { path = "../rust-lib/src/optics"         }
+enso-prelude        = { path = "../rust-lib/src/prelude"        }
+enso-shapely        = { path = "../rust-lib/src/shapely/impl"   }
+enso-shapely-macros = { path = "../rust-lib/src/shapely/macros" }
+```
+
 ### PR Workflow
 
 This does, however, create a bit of a dependency for the order in which you
@@ -171,12 +186,13 @@ these libraries alongside a project.
 2.  In your project's `Cargo.toml`, add a patch override for each library in
     this repo that you want to work on.
 3.  When you are done, you need to bump the library versions for the changed
-    libraries, and PR your changes to this repo.
+    libraries, and PR your changes to this repo. Make sure that you _only_ do
+    this after you're done, as before can cause some issues with `Cargo.lock`.
 4.  Once the PR is accepted, you need to follow the
     [release process](./release-policy.md) to release new versions to
     [`crates.io`](https://crates.io).
-5.  Once those versions are released, you need to update the versions in your
-    project and remove the patch overrides.
+5.  Once those versions are released, you need to first remove the patch
+    overrides and then update the versions in your project.
 6.  You can now PR your changes to the main project.
 
 ## Pull Requests
