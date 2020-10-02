@@ -19,6 +19,7 @@ well-defined release policy. This document defines said policy.
 - [Versioning](#versioning)
 - [Release Branches](#release-branches)
 - [Release Workflow](#release-workflow)
+  - [Release Ordering](#release-ordering)
   - [Tag Naming](#tag-naming)
 
 <!-- /MarkdownTOC -->
@@ -53,6 +54,17 @@ Cutting a release for these libraries works as follows:
 3.  Release each of these libraries to [`crates.io`](https://crates.io). If you
     are a member of the Enso team and do not have the required permissions,
     please ask.
+
+### Release Ordering
+
+As the crates in this repository are interdependent, you will need to release
+them in the following order as `cargo` does not yet have support for
+interdependent releases, and the `cargo publish-all` project doesn't seem to
+work.
+
+> The actionables for this section are:
+>
+> - Record the release order here.
 
 ### Tag Naming
 
