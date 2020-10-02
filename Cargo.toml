@@ -1,10 +1,15 @@
 [workspace]
 
 members = [
-    "src/enso-macro-utils",
-    "src/enso-prelude",
-    "src/enso-shapely/impl",
-    "src/enso-shapely/macros"
+    "src/automata",
+    "src/data",
+    "src/generics",
+    "src/logger",
+    "src/macro-utils",
+    "src/optics",
+    "src/prelude",
+    "src/shapely/impl",
+    "src/shapely/macros",
 ]
 
 [profile.dev]
