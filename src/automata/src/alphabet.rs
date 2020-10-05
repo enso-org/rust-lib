@@ -60,7 +60,7 @@ impl Segmentation {
         end.next().for_each(|t| self.divisions.insert(t));
     }
 
-    /// Creates an [`AlphabetSegmentation`] from an input set of divisions.
+    /// Creates a [`Segmentation`] from an input set of divisions.
     pub fn from_divisions(divisions:&[u64]) -> Self {
         let mut dict = Self::default();
         for val in divisions {

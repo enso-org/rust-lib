@@ -4,6 +4,7 @@ members = [
     "src/automata",
     "src/data",
     "src/generics",
+    "src/lazy-reader",
     "src/logger",
     "src/macro-utils",
     "src/optics",

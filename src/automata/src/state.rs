@@ -7,6 +7,8 @@ use crate::prelude::*;
 
 use crate::nfa::Nfa; // FIXME
 
+
+
 // ===========
 // == State ==
 // ===========
@@ -47,8 +49,8 @@ impl<T> State<T> {
     }
 
     /// Checks whether this state is valid.
-    pub fn is_invalid(self) -> bool {
-        self == Self::INVALID
+    pub fn is_invalid(&self) -> bool {
+        *self == Self::INVALID
     }
 }
 
@@ -75,14 +77,14 @@ impl<T> Debug for State<T> {
 // == Data ==
 // ==========
 
-/// A named state for a [`super::nfa::NFA`].
+/// A named state for a [`super::nfa::Nfa`].
 #[derive(Clone,Debug,Default,PartialEq,Eq)]
 pub struct Data {
     /// A set of transitions that can trigger without consuming a symbol (ε-transitions).
     pub epsilon_links: Vec<State<Nfa>>,
     /// The set of transitions that trigger while consuming a specific symbol.
     ///
-    /// When triggered, the automaton will transition to the [`Transition::target_state`].
+    /// When triggered, the automaton will transition to the [`Transition::target`].
     pub links: Vec<Transition>,
     /// Information whether the state should be exported and marked as a "source" state in the DFA
     /// representation. Non exported states are considered "transitive" states and are used as
@@ -91,7 +93,7 @@ pub struct Data {
 }
 
 impl Data {
-    /// Returns transition (next state) for each symbol in alphabet.
+    /// Returns the transition (next state) for each symbol in the alphabet.
     pub fn targets(&self, alphabet:&alphabet::Segmentation) -> Vec<State<Nfa>> {
         let mut targets = vec![];
         let mut index   = 0;

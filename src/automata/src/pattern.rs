@@ -218,3 +218,29 @@ impl Shr<Pattern> for Pattern {
         }
     }
 }
+
+
+
+// =================
+// === Utilities ===
+// =================
+
+/// Quote a character as a character pattern.
+///
+/// It is equivalent to `Pattern::char(...)`.
+#[macro_export]
+macro_rules! c {
+    ($char:literal) => {
+        Pattern::char($char)
+    }
+}
+
+/// Quote a string as a literal pattern.
+///
+/// It is equivalent to `Pattern::all_of(...)`.
+#[macro_export]
+macro_rules! l {
+    ($lit:literal) => {
+        Pattern::all_of($lit)
+    }
+}

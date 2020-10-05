@@ -67,16 +67,21 @@ impl Nfa {
     pub fn as_graphviz_code(&self) -> String {
         let mut out = String::new();
         for (ix,state) in self.states.iter().enumerate() {
-            let opts = if state.export { "" } else { "[fillcolor=\"#EEEEEE\" fontcolor=\"#888888\"]" };
+            let opts = if state.export { "" } else {
+                "[fillcolor=\"#EEEEEE\" fontcolor=\"#888888\"]"
+            };
             out += &format!("node_{}[label=\"{}\"]{}\n",ix,ix,opts);
             for link in &state.links {
-                out += &format!("node_{} -> node_{}[label=\"{}\"]\n",ix,link.target.id(),link.display_symbols());
+                out += &format!(
+                    "node_{} -> node_{}[label=\"{}\"]\n",ix,link.target.id(),link.display_symbols()
+                );
             }
             for link in &state.epsilon_links {
                 out += &format!("node_{} -> node_{}[style=dashed]\n",ix,link.id());
             }
         }
-        let opts = "node [shape=circle style=filled fillcolor=\"#4385f5\" fontcolor=\"#FFFFFF\" color=white penwidth=5.0 margin=0.1 width=0.5 height=0.5 fixedsize=true]";
+        let opts = "node [shape=circle style=filled fillcolor=\"#4385f5\" fontcolor=\"#FFFFFF\" \
+        color=white penwidth=5.0 margin=0.1 width=0.5 height=0.5 fixedsize=true]";
         format!("digraph G {{\n{}\n{}\n}}\n",opts,out)
     }
 

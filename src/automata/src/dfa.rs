@@ -45,9 +45,8 @@ pub struct Dfa {
     /// the new state.
     ///
     /// For example, the transition matrix for an automaton that accepts the language
-    /// `{"A" | "B"}*"` would appear as follows, with `-` denoting
-    /// [the invalid state](state::INVALID). The leftmost column encodes the input state, while the
-    /// topmost row encodes the input symbols.
+    /// `{"A" | "B"}*"` would appear as follows, with `-` denoting the invalid state. The leftmost
+    /// column encodes the input state, while the topmost row encodes the input symbols.
     ///
     /// |   | A | B |
     /// |:-:|:-:|:-:|
@@ -55,7 +54,6 @@ pub struct Dfa {
     /// | 1 | - | 0 |
     ///
     pub links : Matrix<State>,
-
     /// For each DFA state contains a list of NFA states it was constructed from.
     pub sources : Vec<Vec<nfa::State>>,
 }
@@ -72,7 +70,7 @@ impl Dfa {
         self.links.safe_index(current_state.id(),ix).unwrap_or_default()
     }
 
-    /// Convert the automata to a GraphViz Dot code for the deubgging purposes.
+    /// Convert the automata to GraphViz Dot code for the deubgging purposes.
     pub fn as_graphviz_code(&self) -> String {
         let mut out = String::new();
         for row in 0 .. self.links.rows {
@@ -116,8 +114,7 @@ impl From<Vec<Vec<usize>>> for Matrix<State> {
 /// The callback associated with an arbitrary state of a finite automaton.
 ///
 /// It contains the rust code that is intended to be executed after encountering a
-/// [`pattern`](super::pattern::Pattern) that causes the associated state transition. This pattern
-/// is declared in [`Rule.pattern`](crate::group::rule::Rule::pattern).
+/// [`pattern`](super::pattern::Pattern) that causes the associated state transition.
 #[derive(Clone,Debug,PartialEq,Eq)]
 pub struct RuleExecutable {
     /// A description of the priority with which the callback is constructed during codegen.
