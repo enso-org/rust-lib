@@ -41,6 +41,9 @@ labels:
   - name: "Category: Generics"
     color: "#d1f0fd"
     description: The generics library
+  - name: "Category: Lazy Reader"
+    color: "#d1f0fd"
+    description: The lazy reader library
   - name: "Category: Logger"
     color: "#d1f0fd"
     description: The logging library
