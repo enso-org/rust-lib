@@ -24,7 +24,7 @@ impl Symbol {
 
     /// Invalid symbol.
     pub fn invalid() -> Self {
-        Self::new(u64::min_value() + 1)
+        Self::new(u64::max_value() - 1)
     }
 
     /// Null symbol.
