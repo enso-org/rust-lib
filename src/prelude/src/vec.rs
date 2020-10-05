@@ -23,7 +23,7 @@ pub trait VecOps {
     fn extended<I:IntoIterator<Item=Self::Item>>(self, iter:I) -> Self;
 }
 
-impl <T> VecOps for Vec<T> {
+impl<T> VecOps for Vec<T> {
     type Item = T;
 
     fn push_and_get(&mut self, item:Self::Item) -> &Self::Item {

@@ -44,7 +44,6 @@ impl<T:Copy> Matrix<T> {
     }
 }
 
-
 impl<T:Default> Matrix<T> {
     /// Constructs a matrix with the dimensions given by `rows` and `columns`.
     pub fn new(rows:usize, columns:usize) -> Self {
