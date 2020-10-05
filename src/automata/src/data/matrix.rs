@@ -35,7 +35,15 @@ impl<T:Copy> Matrix<T> {
     pub fn row_indices(&self) -> Range<usize> {
         0..self.rows()
     }
+
+    /// Indexing with bounds checking.
+    pub fn safe_index(&self, row:usize, column:usize) -> Option<T> {
+        (row < self.rows && column < self.columns).as_some_from(|| {
+            self.matrix[row*self.columns+column]
+        })
+    }
 }
+
 
 impl<T:Default> Matrix<T> {
     /// Constructs a matrix with the dimensions given by `rows` and `columns`.
