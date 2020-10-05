@@ -76,6 +76,7 @@ work.
 7.  `enso-optics`
 8.  `enso-logger`
 9.  `enso-automata`
+10. `enso-lazy-reader`
 
 > The actionables for this section are:
 >
