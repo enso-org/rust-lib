@@ -47,13 +47,18 @@ Releases are made from the `main` branch in this repository, and each release to
 
 Cutting a release for these libraries works as follows:
 
-1.  PR your changes against `main`, ensuring that the libraries have a bumped
-    version number.
+1.  PR your changes against `main`, ensuring that the modified libraries have a
+    bumped version number.
 2.  Once the PR lands on `main`, create a tag for each library you are
     releasing, named as described below in [tag naming](#tag-naming).
 3.  Release each of these libraries to [`crates.io`](https://crates.io). If you
     are a member of the Enso team and do not have the required permissions,
     please ask.
+
+If a change to a library (e.g. prelude) is not required in the downstream
+libraries in this repo and additionally _does not cause breakage_ of said
+downstream libraries, it is not necessary to release new versions of the
+downstream libraries too.
 
 ### Release Ordering
 
