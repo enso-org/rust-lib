@@ -301,3 +301,12 @@ impl<T> NonEmptyVec<T> {
         self.elems.splice(range,replace_with)
     }
 }
+
+
+// === Trait Impls ===
+
+impl<T:Default> Default for NonEmptyVec<T> {
+    fn default() -> Self {
+        Self::singleton(default())
+    }
+}
