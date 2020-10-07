@@ -69,6 +69,16 @@ impl Segmentation {
         dict
     }
 
+    /// Get the divisions in the alphabet.
+    pub fn divisions(&self) -> &BTreeSet<Symbol> {
+        &self.divisions
+    }
+
+    /// Obtain the number of divisions in the segmentation.
+    pub fn len(&self) -> usize {
+        self.divisions.len()
+    }
+
     /// Seal the segmentation.
     pub fn seal(&self) -> SealedSegmentation {
         self.into()
@@ -123,5 +133,47 @@ impl From<&Segmentation> for SealedSegmentation {
     fn from(s:&Segmentation) -> Self {
         let division_map = s.divisions.iter().cloned().enumerate().map(|(ix,s)|(s,ix)).collect();
         Self {division_map}
+    }
+}
+
+
+
+// =============
+// === Tests ===
+// =============
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn contains_zero_element() {
+        let segmentation = Segmentation::default();
+        assert!(segmentation.divisions().contains(&Symbol::default()))
+    }
+
+    #[test]
+    fn symbol_insertion() {
+        let mut segmentation = Segmentation::default();
+        segmentation.insert(Symbol::from('a')..=Symbol::from('z'));
+        assert!(segmentation.divisions().contains(&Symbol::from('a')));
+        assert!(segmentation.divisions().contains(&Symbol::from('z' as u32 + 1)));
+    }
+
+    #[test]
+    fn len() {
+        let num_to_insert = 10;
+        let mut segmentation = Segmentation::default();
+        for ix in 0u64..num_to_insert {
+            segmentation.insert(Symbol::from(100+ix)..=Symbol::from(100+ix))
+        }
+        assert_eq!(segmentation.len(),(num_to_insert+2) as usize);
+    }
+
+    #[test]
+    fn from_divisions_construction() {
+        let segmentation = Segmentation::from_divisions(&[0,5,10,15,20]);
+        assert_eq!(segmentation.len(),5);
+        assert!(segmentation.divisions.contains(&Symbol::from(15u64)));
     }
 }

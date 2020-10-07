@@ -107,24 +107,6 @@ impl From<Vec<Vec<usize>>> for Matrix<State> {
 
 
 
-// ================
-// === Callback ===
-// ================
-
-/// The callback associated with an arbitrary state of a finite automaton.
-///
-/// It contains the rust code that is intended to be executed after encountering a
-/// [`pattern`](super::pattern::Pattern) that causes the associated state transition.
-#[derive(Clone,Debug,PartialEq,Eq)]
-pub struct RuleExecutable {
-    /// A description of the priority with which the callback is constructed during codegen.
-    pub priority: usize,
-    /// The rust code that will be executed when running this callback.
-    pub code: String,
-}
-
-
-
 // ===================
 // === Conversions ===
 // ===================
@@ -182,126 +164,193 @@ impl From<&Nfa> for Dfa {
 
 
 
-// // ===========
-// // == Tests ==
-// // ===========
-//
-// #[cfg(test)]
-// pub mod tests {
-//     extern crate test;
-//
-//     use crate::dfa;
-//
-//     use super::*;
-//     use test::Bencher;
-//
-//     /// Nfa that accepts a newline '\n'.
-//     pub fn newline() -> Nfa {
-//         Nfa {
-//             start: nfa::State::new(0),
-//             states: vec![
-//                 state::Data::from(vec![1]),
-//                 state::Data::from(vec![(10..=10,2)]),
-//                 state::Data::from(vec![3]),
-//                 state::Data::default(),
-//             ],
-//             alphabet: alphabet::Segmentation::from_divisions(vec![10, 11].as_slice()),
-//         }
-//     }
-//
-//     /// Nfa that accepts any letter in the range a..=z.
-//     pub fn letter() -> Nfa {
-//         Nfa {
-//             start: nfa::State::new(0),
-//             states: vec![
-//                 state::Data::from(vec![1]),
-//                 state::Data::from(vec![(97..=122,2)]),
-//                 state::Data::from(vec![3]),
-//                 state::Data::default(),
-//             ],
-//             alphabet: alphabet::Segmentation::from_divisions(vec![97, 123].as_slice()),
-//         }
-//     }
-//
-//     /// Nfa that accepts any number of spaces ' '.
-//     pub fn spaces() -> Nfa {
-//         Nfa {
-//             start: nfa::State::new(0),
-//             states: vec![
-//                 state::Data::from(vec![1]),
-//                 state::Data::from(vec![2]),
-//                 state::Data::from(vec![(32..=32,3)]),
-//                 state::Data::from(vec![4]),
-//                 state::Data::from(vec![5,8]),
-//                 state::Data::from(vec![6]),
-//                 state::Data::from(vec![(32..=32,7)]),
-//                 state::Data::from(vec![8]),
-//                 state::Data::from(vec![5,9]),
-//                 state::Data::default(),
-//             ],
-//             alphabet: alphabet::Segmentation::from_divisions(vec![0, 32, 33].as_slice()),
-//         }
-//     }
-//
-//     /// Nfa that accepts one letter a..=z or many spaces ' '.
-//     pub fn letter_and_spaces() -> Nfa {
-//         Nfa {
-//             start: nfa::State::new(0),
-//             states: vec![
-//                 state::Data::from(vec![1,3]),
-//                 state::Data::from(vec![(97..=122,2)]),
-//                 state::Data::from(vec![11]),
-//                 state::Data::from(vec![4]),
-//                 state::Data::from(vec![(32..=32,5)]),
-//                 state::Data::from(vec![6]),
-//                 state::Data::from(vec![7,10]),
-//                 state::Data::from(vec![8]),
-//                 state::Data::from(vec![(32..=32,9)]),
-//                 state::Data::from(vec![10]),
-//                 state::Data::from(vec![7,11]),
-//                 state::Data::default(),
-//             ],
-//             alphabet: alphabet::Segmentation::from_divisions(vec![32, 33, 97, 123].as_slice()),
-//         }
-//     }
-//
-//     #[test]
-//     fn test_to_dfa_newline() {
-//         assert_eq!(Dfa::from(&newline()),dfa::tests::newline());
-//     }
-//
-//     #[test]
-//     fn test_to_dfa_letter() {
-//         assert_eq!(Dfa::from(&letter()),dfa::tests::letter());
-//     }
-//
-//     #[test]
-//     fn test_to_dfa_spaces() {
-//         assert_eq!(Dfa::from(&spaces()),dfa::tests::spaces());
-//     }
-//
-//     #[test]
-//     fn test_to_dfa_letter_and_spaces() {
-//         assert_eq!(Dfa::from(&letter_and_spaces()),dfa::tests::letter_and_spaces());
-//     }
-//
-//     #[bench]
-//     fn bench_to_dfa_newline(bencher:&mut Bencher) {
-//         bencher.iter(|| Dfa::from(&newline()))
-//     }
-//
-//     #[bench]
-//     fn bench_to_dfa_letter(bencher:&mut Bencher) {
-//         bencher.iter(|| Dfa::from(&letter()))
-//     }
-//
-//     #[bench]
-//     fn bench_to_dfa_spaces(bencher:&mut Bencher) {
-//         bencher.iter(|| Dfa::from(&spaces()))
-//     }
-//
-//     #[bench]
-//     fn bench_to_dfa_letter_and_spaces(bencher:&mut Bencher) {
-//         bencher.iter(|| Dfa::from(&letter_and_spaces()))
-//     }
-// }
+// =============
+// === Tests ===
+// =============
+
+#[cfg(test)]
+pub mod tests {
+    extern crate test;
+    use super::*;
+    use crate::nfa;
+    use test::Bencher;
+
+
+    // === Utilities ===
+
+    fn invalid() -> usize {
+        State::INVALID.id()
+    }
+
+    fn assert_same_alphabet(dfa:&Dfa, nfa:&Nfa) {
+        assert_eq!(dfa.alphabet,nfa.alphabet.seal());
+    }
+
+    fn assert_same_matrix(dfa:&Dfa, expected:&Matrix<State>) {
+        assert_eq!(dfa.links,*expected);
+    }
+
+
+    // === The Tests ===
+
+    #[test]
+    fn dfa_pattern_range() {
+        let nfa = nfa::tests::pattern_range();
+        let dfa = Dfa::from(&nfa.nfa);
+        assert_same_alphabet(&dfa,&nfa);
+        let expected = Matrix::from(
+            vec![
+                vec![invalid() , 1         , invalid()],
+                vec![invalid() , invalid() , invalid()],
+            ]
+        );
+        assert_same_matrix(&dfa,&expected);
+    }
+
+    #[test]
+    fn dfa_pattern_or() {
+        let nfa = nfa::tests::pattern_or();
+        let dfa = Dfa::from(&nfa.nfa);
+        assert_same_alphabet(&dfa,&nfa);
+        let expected = Matrix::from(
+            vec![
+                vec![invalid() , 1         , invalid() , 2         , invalid()],
+                vec![invalid() , invalid() , invalid() , invalid() , invalid()],
+                vec![invalid() , invalid() , invalid() , invalid() , invalid()],
+            ]
+        );
+        assert_same_matrix(&dfa,&expected);
+    }
+
+    #[test]
+    fn dfa_pattern_seq() {
+        let nfa = nfa::tests::pattern_seq();
+        let dfa = Dfa::from(&nfa.nfa);
+        assert_same_alphabet(&dfa,&nfa);
+        let expected = Matrix::from(
+            vec![
+                vec![invalid() , 1         , invalid() , invalid() , invalid()],
+                vec![invalid() , invalid() , invalid() , 2         , invalid()],
+                vec![invalid() , invalid() , invalid() , invalid() , invalid()],
+            ]
+        );
+        assert_same_matrix(&dfa,&expected);
+    }
+
+    #[test]
+    fn dfa_pattern_many() {
+        let nfa = nfa::tests::pattern_many();
+        let dfa = Dfa::from(&nfa.nfa);
+        assert_same_alphabet(&dfa,&nfa);
+        let expected = Matrix::from(
+            vec![
+                vec![invalid() , 1 , invalid()],
+                vec![invalid() , 1 , invalid()],
+            ]
+        );
+        assert_same_matrix(&dfa,&expected);
+    }
+
+    #[test]
+    fn dfa_pattern_always() {
+        let nfa = nfa::tests::pattern_always();
+        let dfa = Dfa::from(&nfa.nfa);
+        assert_same_alphabet(&dfa,&nfa);
+        let expected = Matrix::from(
+            vec![
+                vec![invalid()]
+            ]
+        );
+        assert_same_matrix(&dfa,&expected);
+    }
+
+    #[test]
+    fn dfa_pattern_never() {
+        let nfa = nfa::tests::pattern_never();
+        let dfa = Dfa::from(&nfa.nfa);
+        assert_same_alphabet(&dfa,&nfa);
+        let expected = Matrix::from(
+            vec![
+                vec![invalid()]
+            ]
+        );
+        assert_same_matrix(&dfa,&expected);
+    }
+
+    #[test]
+    fn dfa_simple_rules() {
+        let nfa = nfa::tests::simple_rules();
+        let dfa = Dfa::from(&nfa.nfa);
+        assert_same_alphabet(&dfa,&nfa);
+        let expected = Matrix::from(
+            vec![
+                vec![invalid() , 1         , invalid() , invalid()],
+                vec![invalid() , invalid() , 2         , invalid()],
+                vec![invalid() , invalid() , invalid() , invalid()],
+            ]
+        );
+        assert_same_matrix(&dfa,&expected);
+    }
+
+    #[test]
+    fn dfa_complex_rules() {
+        let nfa = nfa::tests::complex_rules();
+        let dfa = Dfa::from(&nfa.nfa);
+        assert_same_alphabet(&dfa,&nfa);
+        let expected = Matrix::from(
+            vec![
+                vec![1         , 2         , 1         , 1         , 1         , 1         , 3        ],
+                vec![invalid() , invalid() , invalid() , invalid() , invalid() , invalid() , invalid()],
+                vec![invalid() , invalid() , invalid() , 4         , 5         , invalid() , invalid()],
+                vec![invalid() , invalid() , invalid() , invalid() , invalid() , invalid() , invalid()],
+                vec![invalid() , invalid() , invalid() , 6         , invalid() , invalid() , invalid()],
+                vec![invalid() , invalid() , invalid() , invalid() , 7         , invalid() , invalid()],
+                vec![invalid() , invalid() , invalid() , 6         , invalid() , invalid() , invalid()],
+                vec![invalid() , invalid() , invalid() , invalid() , 7         , invalid() , invalid()],
+            ]
+        );
+        assert_same_matrix(&dfa,&expected);
+    }
+
+    // === The Benchmarks ===
+
+    #[bench]
+    fn bench_to_dfa_pattern_range(bencher:&mut Bencher) {
+        bencher.iter(|| Dfa::from(&nfa::tests::pattern_range().nfa))
+    }
+
+    #[bench]
+    fn bench_to_dfa_pattern_or(bencher:&mut Bencher) {
+        bencher.iter(|| Dfa::from(&nfa::tests::pattern_or().nfa))
+    }
+
+    #[bench]
+    fn bench_to_dfa_pattern_seq(bencher:&mut Bencher) {
+        bencher.iter(|| Dfa::from(&nfa::tests::pattern_seq().nfa))
+    }
+
+    #[bench]
+    fn bench_to_dfa_pattern_many(bencher:&mut Bencher) {
+        bencher.iter(|| Dfa::from(&nfa::tests::pattern_many().nfa))
+    }
+
+    #[bench]
+    fn bench_to_dfa_pattern_always(bencher:&mut Bencher) {
+        bencher.iter(|| Dfa::from(&nfa::tests::pattern_always().nfa))
+    }
+
+    #[bench]
+    fn bench_to_dfa_pattern_never(bencher:&mut Bencher) {
+        bencher.iter(|| Dfa::from(&nfa::tests::pattern_never().nfa))
+    }
+
+    #[bench]
+    fn bench_to_dfa_simple_rules(bencher:&mut Bencher) {
+        bencher.iter(|| Dfa::from(&nfa::tests::simple_rules().nfa))
+    }
+
+    #[bench]
+    fn bench_to_dfa_complex_rules(bencher:&mut Bencher) {
+        bencher.iter(|| Dfa::from(&nfa::tests::complex_rules().nfa))
+    }
+}

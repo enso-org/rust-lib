@@ -93,6 +93,17 @@ pub struct Data {
 }
 
 impl Data {
+
+    /// Get a reference to the links in this state.
+    pub fn links(&self) -> &Vec<Transition> {
+        &self.links
+    }
+
+    /// Get a reference to the epsilon links in this state.
+    pub fn epsilon_links(&self) -> &Vec<State<Nfa>> {
+        &self.epsilon_links
+    }
+
     /// Returns the transition (next state) for each symbol in the alphabet.
     pub fn targets(&self, alphabet:&alphabet::Segmentation) -> Vec<State<Nfa>> {
         let mut targets = vec![];
@@ -153,27 +164,51 @@ impl Transition {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use super::super::alphabet;
 
     // === Trait Impls ====
 
-    impl From<Vec<usize>> for Data {
-        /// Creates a state with epsilon links.
-        fn from(vec:Vec<usize>) -> Self {
-            let epsilon_links = vec.iter().cloned().map(State::new).collect();
-            Data {epsilon_links,..Default::default()}
+    impl From<Vec<Transition>> for Data {
+        fn from(links:Vec<Transition>) -> Self {
+            let epsilon_links = vec![];
+            let export        = false;
+            Data{epsilon_links,links,export}
         }
     }
 
-    impl From<Vec<(RangeInclusive<u64>, usize)>> for Data {
-        /// Creates a state with ordinary links.
-        fn from(vec:Vec<(RangeInclusive<u64>, usize)>) -> Self {
-            let link = |(range, id): (RangeInclusive<u64>, usize)| {
-                let start = Symbol::new(*range.start());
-                let end   = Symbol::new(*range.end());
-                Transition::new(start..=end, State::new(id))
-            };
-            let links = vec.iter().cloned().map(link).collect();
-            Data {links,..Default::default()}
-        }
+
+    // === The Tests ===
+
+    #[test]
+    fn state_default() {
+        assert_eq!(State::<Nfa>::default(),State::<Nfa>::INVALID);
+    }
+
+    #[test]
+    fn state_data_default() {
+        let state = Data::default();
+        assert!(state.epsilon_links().is_empty());
+        assert!(state.links().is_empty());
+        assert!(!state.export)
+    }
+
+    #[test]
+    fn state_targets() {
+        let alphabet = alphabet::Segmentation::from_divisions(&[0,5,10,15,25,50]);
+        let state = Data::from(vec![
+            Transition::new(Symbol::from(0u64)..=Symbol::from(10u64),State::<Nfa>::new(1)),
+            Transition::new(Symbol::from(5u64)..=Symbol::from(15u64),State::<Nfa>::new(2)),
+        ]);
+        assert_eq!(state.links().len(),2);
+        let targets = state.targets(&alphabet);
+        let expected_targets:Vec<State<Nfa>> = vec![
+            State::<Nfa>::new(1),
+            State::<Nfa>::new(1),
+            State::<Nfa>::new(1),
+            State::<Nfa>::new(2),
+            State::<Nfa>::INVALID,
+            State::<Nfa>::INVALID,
+        ];
+        assert_eq!(expected_targets,targets);
     }
 }

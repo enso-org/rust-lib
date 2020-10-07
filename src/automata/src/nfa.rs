@@ -21,17 +21,17 @@ use std::ops::RangeInclusive;
 /// Specialized NFA state type.
 pub type State = state::State<Nfa>;
 
-
-
-// =========================================
-// === Non-Deterministic Finite Automata ===
-// =========================================
-
 /// A state identifier based on a set of states.
 ///
 /// This is used during the NFA -> Dfa transformation, where multiple states can merge together due
 /// to the collapsing of epsilon transitions.
 pub type StateSetId = BTreeSet<State>;
+
+
+
+// =========================================
+// === Non-Deterministic Finite Automata ===
+// =========================================
 
 /// The definition of a [NFA](https://en.wikipedia.org/wiki/Nondeterministic_finite_automaton) for a
 /// given set of symbols, states, and transitions (specifically a NFA with ε-moves).
@@ -63,28 +63,7 @@ impl Nfa {
         Self {start,alphabet,states}.init_start_state()
     }
 
-    /// Convert the automata to a GraphViz Dot code for the deubgging purposes.
-    pub fn as_graphviz_code(&self) -> String {
-        let mut out = String::new();
-        for (ix,state) in self.states.iter().enumerate() {
-            let opts = if state.export { "" } else {
-                "[fillcolor=\"#EEEEEE\" fontcolor=\"#888888\"]"
-            };
-            out += &format!("node_{}[label=\"{}\"]{}\n",ix,ix,opts);
-            for link in &state.links {
-                out += &format!(
-                    "node_{} -> node_{}[label=\"{}\"]\n",ix,link.target.id(),link.display_symbols()
-                );
-            }
-            for link in &state.epsilon_links {
-                out += &format!("node_{} -> node_{}[style=dashed]\n",ix,link.id());
-            }
-        }
-        let opts = "node [shape=circle style=filled fillcolor=\"#4385f5\" fontcolor=\"#FFFFFF\" \
-        color=white penwidth=5.0 margin=0.1 width=0.5 height=0.5 fixedsize=true]";
-        format!("digraph G {{\n{}\n{}\n}}\n",opts,out)
-    }
-
+    /// Initialize the start state of the automaton.
     fn init_start_state(mut self) -> Self {
         let start = self.new_state();
         self[start].export = true;
@@ -104,6 +83,16 @@ impl Nfa {
         let state = self.new_state();
         self[state].export = true;
         state
+    }
+
+    /// Get a reference to the states for this automaton.
+    pub fn states(&self) -> &Vec<state::Data> {
+        &self.states
+    }
+
+    /// Get a reference to the alphabet for this automaton.
+    pub fn alphabet(&self) -> &alphabet::Segmentation {
+        &self.alphabet
     }
 
     /// Creates an epsilon transition between two states.
@@ -133,10 +122,10 @@ impl Nfa {
     /// Transforms a pattern to connected NFA states by using the algorithm described
     /// [here](https://www.youtube.com/watch?v=RYNN-tb9WxI).
     /// The asymptotic complexity is linear in number of symbols.
-    pub fn new_pattern(&mut self, current:State, pattern:impl AsRef<Pattern>) -> State {
+    pub fn new_pattern(&mut self, source:State, pattern:impl AsRef<Pattern>) -> State {
         let pattern = pattern.as_ref();
-        //let current = self.new_state();
-        //self.connect(source,current);
+        let current = self.new_state();
+        self.connect(source,current);
         let state = match pattern {
             Pattern::Range(range) => {
                 let state = self.new_state();
@@ -177,31 +166,33 @@ impl Nfa {
     /// The asymptotic complexity is linear in number of symbols.
     pub fn new_pattern_to(&mut self, source:State, target:State, pattern:impl AsRef<Pattern>) {
         let pattern = pattern.as_ref();
+        let current = self.new_state();
+        self.connect(source,current);
         match pattern {
             Pattern::Range(range) => {
-                self.connect_via(source,target,range);
+                self.connect_via(current,target,range);
             },
             Pattern::Many(body) => {
                 let s1 = self.new_state();
                 let s2 = self.new_pattern(s1,body);
                 let target = self.new_state();
-                self.connect(source,s1);
-                self.connect(source,target);
+                self.connect(current,s1);
+                self.connect(current,target);
                 self.connect(s2,target);
                 self.connect(target,s1);
             },
             Pattern::Seq(patterns) => {
-                let out = patterns.iter().fold(source,|s,pat| self.new_pattern(s,pat));
+                let out = patterns.iter().fold(current,|s,pat| self.new_pattern(s,pat));
                 self.connect(out,target)
             },
             Pattern::Or(patterns) => {
-                let states = patterns.iter().map(|pat| self.new_pattern(source,pat)).collect_vec();
+                let states = patterns.iter().map(|pat| self.new_pattern(current,pat)).collect_vec();
                 for state in states {
                     self.connect(state,target);
                 }
             },
             Pattern::Always => {
-                self.connect(source,target)
+                self.connect(current,target)
             },
             Pattern::Never => {},
         };
@@ -250,6 +241,28 @@ impl Nfa {
         }
         matrix
     }
+
+    /// Convert the automata to a GraphViz Dot code for the deubgging purposes.
+    pub fn as_graphviz_code(&self) -> String {
+        let mut out = String::new();
+        for (ix,state) in self.states.iter().enumerate() {
+            let opts = if state.export { "" } else {
+                "[fillcolor=\"#EEEEEE\" fontcolor=\"#888888\"]"
+            };
+            out += &format!("node_{}[label=\"{}\"]{}\n",ix,ix,opts);
+            for link in &state.links {
+                out += &format!(
+                    "node_{} -> node_{}[label=\"{}\"]\n",ix,link.target.id(),link.display_symbols()
+                );
+            }
+            for link in &state.epsilon_links {
+                out += &format!("node_{} -> node_{}[style=dashed]\n",ix,link.id());
+            }
+        }
+        let opts = "node [shape=circle style=filled fillcolor=\"#4385f5\" fontcolor=\"#FFFFFF\" \
+        color=white penwidth=5.0 margin=0.1 width=0.5 height=0.5 fixedsize=true]";
+        format!("digraph G {{\n{}\n{}\n}}\n",opts,out)
+    }
 }
 
 impl Default for Nfa {
@@ -273,126 +286,249 @@ impl IndexMut<State> for Nfa {
 
 
 
-// // ===========
-// // == Tests ==
-// // ===========
-//
-// #[cfg(test)]
-// pub mod tests {
-//     extern crate test;
-//
-//     use crate::dfa;
-//
-//     use super::*;
-//     use test::Bencher;
-//
-//     /// Nfa that accepts a newline '\n'.
-//     pub fn newline() -> Nfa {
-//         Nfa {
-//             start: State::new(0),
-//             states: vec![
-//                 state::Data::from(vec![1]),
-//                 state::Data::from(vec![(10..=10,2)]),
-//                 state::Data::from(vec![3]).named("group0_rule0"),
-//                 state::Data::default(),
-//             ],
-//             alphabet: alphabet::Segmentation::from_divisions(vec![10, 11].as_slice()),
-//         }
-//     }
-//
-//     /// Nfa that accepts any letter in the range a..=z.
-//     pub fn letter() -> Nfa {
-//         Nfa {
-//             start: State::new(0),
-//             states: vec![
-//                 state::Data::from(vec![1]),
-//                 state::Data::from(vec![(97..=122,2)]),
-//                 state::Data::from(vec![3]).named("group0_rule0"),
-//                 State::default(),
-//             ],
-//             alphabet: alphabet::Segmentation::from_divisions(vec![97, 123].as_slice()),
-//         }
-//     }
-//
-//     /// Nfa that accepts any number of spaces ' '.
-//     pub fn spaces() -> Nfa {
-//         Nfa {
-//             start: State::new(0),
-//             states: vec![
-//                 state::Data::from(vec![1]),
-//                 state::Data::from(vec![2]),
-//                 state::Data::from(vec![(32..=32,3)]),
-//                 state::Data::from(vec![4]),
-//                 state::Data::from(vec![5,8]),
-//                 state::Data::from(vec![6]),
-//                 state::Data::from(vec![(32..=32,7)]),
-//                 state::Data::from(vec![8]),
-//                 state::Data::from(vec![5,9]).named("group0_rule0"),
-//                 State::default(),
-//             ],
-//             alphabet: alphabet::Segmentation::from_divisions(vec![0, 32, 33].as_slice()),
-//         }
-//     }
-//
-//     /// Nfa that accepts one letter a..=z or many spaces ' '.
-//     pub fn letter_and_spaces() -> Nfa {
-//         Nfa {
-//             start: State::new(0),
-//             states: vec![
-//                 state::Data::from(vec![1,3]),
-//                 state::Data::from(vec![(97..=122,2)]),
-//                 state::Data::from(vec![11]).named("group0_rule0"),
-//                 state::Data::from(vec![4]),
-//                 state::Data::from(vec![(32..=32,5)]),
-//                 state::Data::from(vec![6]),
-//                 state::Data::from(vec![7,10]),
-//                 state::Data::from(vec![8]),
-//                 state::Data::from(vec![(32..=32,9)]),
-//                 state::Data::from(vec![10]),
-//                 state::Data::from(vec![7,11]).named("group0_rule1"),
-//                 State::default(),
-//             ],
-//             alphabet: alphabet::Segmentation::from_divisions(vec![32, 33, 97, 123].as_slice()),
-//         }
-//     }
-//
-//     #[test]
-//     fn test_to_dfa_newline() {
-//         assert_eq!(Dfa::from(&newline()),dfa::tests::newline());
-//     }
-//
-//     #[test]
-//     fn test_to_dfa_letter() {
-//         assert_eq!(Dfa::from(&letter()),dfa::tests::letter());
-//     }
-//
-//     #[test]
-//     fn test_to_dfa_spaces() {
-//         assert_eq!(Dfa::from(&spaces()),dfa::tests::spaces());
-//     }
-//
-//     #[test]
-//     fn test_to_dfa_letter_and_spaces() {
-//         assert_eq!(Dfa::from(&letter_and_spaces()),dfa::tests::letter_and_spaces());
-//     }
-//
-//     #[bench]
-//     fn bench_to_dfa_newline(bencher:&mut Bencher) {
-//         bencher.iter(|| Dfa::from(&newline()))
-//     }
-//
-//     #[bench]
-//     fn bench_to_dfa_letter(bencher:&mut Bencher) {
-//         bencher.iter(|| Dfa::from(&letter()))
-//     }
-//
-//     #[bench]
-//     fn bench_to_dfa_spaces(bencher:&mut Bencher) {
-//         bencher.iter(|| Dfa::from(&spaces()))
-//     }
-//
-//     #[bench]
-//     fn bench_to_dfa_letter_and_spaces(bencher:&mut Bencher) {
-//         bencher.iter(|| Dfa::from(&letter_and_spaces()))
-//     }
-// }
+// ===========
+// == Tests ==
+// ===========
+
+#[cfg(test)]
+pub mod tests {
+    use super::*;
+
+    // === Test Utilities ===
+
+    #[allow(missing_docs)]
+    #[derive(Clone,Debug,Default,PartialEq)]
+    pub struct NfaTest {
+        pub nfa               : Nfa,
+        pub start_state_id    : State,
+        pub pattern_state_ids : Vec<State>,
+        pub end_state_id      : State,
+    }
+    #[allow(missing_docs)]
+    impl NfaTest {
+        pub fn make(patterns:Vec<Pattern>) -> Self {
+            let mut nfa          = Nfa::default();
+            let start_state_id   = nfa.start;
+            let mut pattern_state_ids = vec![];
+            let end_state_id     = nfa.new_state_exported();
+            for pattern in patterns {
+                let id = nfa.new_pattern(start_state_id,&pattern);
+                pattern_state_ids.push(id);
+                nfa.connect(id,end_state_id);
+            }
+            Self{nfa,start_state_id,pattern_state_ids,end_state_id}
+        }
+
+        pub fn id(id:usize) -> State {
+            State::new(id)
+        }
+
+        pub fn has_transition(&self, trigger:RangeInclusive<Symbol>, target:State) -> bool {
+            self.states.iter().fold(false,|l,r| {
+                l || r.links().iter().find(|transition | {
+                    (transition.symbols == trigger) && transition.target == target
+                }).is_some()
+            })
+        }
+
+        pub fn has_epsilon(&self, from:State, to:State) -> bool {
+            self.states.iter().enumerate().fold(false,|l,(ix,r)| {
+                let state_has = ix == from.id() && r.epsilon_links().iter().find(|ident| {
+                    **ident == to
+                }).is_some();
+                l || state_has
+            })
+        }
+    }
+    impl Deref for NfaTest {
+        type Target = Nfa;
+
+        fn deref(&self) -> &Self::Target {
+            &self.nfa
+        }
+    }
+
+
+    // === The Automata ===
+
+    pub fn pattern_range() -> NfaTest {
+        let pattern = Pattern::range('a'..='z');
+        NfaTest::make(vec![pattern])
+    }
+
+    pub fn pattern_or() -> NfaTest {
+        let pattern = Pattern::char('a') | Pattern::char('d');
+        NfaTest::make(vec![pattern])
+    }
+
+    pub fn pattern_seq() -> NfaTest {
+        let pattern = Pattern::char('a') >> Pattern::char('d');
+        NfaTest::make(vec![pattern])
+    }
+
+    pub fn pattern_many() -> NfaTest {
+        let pattern = Pattern::char('a').many();
+        NfaTest::make(vec![pattern])
+    }
+
+    pub fn pattern_always() -> NfaTest {
+        let pattern = Pattern::always();
+        NfaTest::make(vec![pattern])
+    }
+
+    pub fn pattern_never() -> NfaTest {
+        let pattern = Pattern::never();
+        NfaTest::make(vec![pattern])
+    }
+
+    pub fn simple_rules() -> NfaTest {
+        let a   = Pattern::char('a');
+        let b   = Pattern::char('b');
+        let ab  = &a >> &b;
+        NfaTest::make(vec![a,ab])
+    }
+
+    pub fn complex_rules() -> NfaTest {
+        let a_word        = Pattern::char('a').many1();
+        let b_word        = Pattern::char('b').many1();
+        let space         = Pattern::char(' ');
+        let spaced_a_word = &space >> &a_word;
+        let spaced_b_word = &space >> &b_word;
+        let any           = Pattern::any();
+        let end           = Pattern::eof();
+        NfaTest::make(vec![spaced_a_word,spaced_b_word,end,any])
+    }
+
+
+    // === The Tests ===
+
+    #[test]
+    fn nfa_pattern_range() {
+        let nfa = pattern_range();
+
+        assert!(nfa.alphabet.divisions().contains(&Symbol::from(0u64)));
+        assert!(nfa.alphabet.divisions().contains(&Symbol::from(97u64)));
+        assert!(nfa.alphabet.divisions().contains(&Symbol::from(123u64)));
+        assert_eq!(nfa.states.len(),4);
+        assert!(nfa.has_epsilon(nfa.start_state_id,NfaTest::id(2)));
+        assert!(nfa.has_epsilon(nfa.pattern_state_ids[0],nfa.end_state_id));
+        assert!(nfa.has_transition(Symbol::from('a')..=Symbol::from('z'),nfa.pattern_state_ids[0]));
+    }
+
+    #[test]
+    fn nfa_pattern_or() {
+        let nfa = pattern_or();
+
+        assert!(nfa.alphabet.divisions().contains(&Symbol::from(0u64)));
+        assert!(nfa.alphabet.divisions().contains(&Symbol::from(97u64)));
+        assert!(nfa.alphabet.divisions().contains(&Symbol::from(98u64)));
+        assert!(nfa.alphabet.divisions().contains(&Symbol::from(100u64)));
+        assert!(nfa.alphabet.divisions().contains(&Symbol::from(101u64)));
+        assert_eq!(nfa.states.len(),8);
+        assert!(nfa.has_epsilon(nfa.start_state_id,NfaTest::id(2)));
+        assert!(nfa.has_epsilon(NfaTest::id(2),NfaTest::id(3)));
+        assert!(nfa.has_epsilon(NfaTest::id(2),NfaTest::id(5)));
+        assert!(nfa.has_epsilon(NfaTest::id(6),nfa.pattern_state_ids[0]));
+        assert!(nfa.has_epsilon(NfaTest::id(4),nfa.pattern_state_ids[0]));
+        assert!(nfa.has_epsilon(nfa.pattern_state_ids[0],nfa.end_state_id));
+        assert!(nfa.has_transition(Symbol::from('a')..=Symbol::from('a'),NfaTest::id(4)));
+        assert!(nfa.has_transition(Symbol::from('d')..=Symbol::from('d'),NfaTest::id(6)));
+    }
+
+    #[test]
+    fn nfa_pattern_seq() {
+        let nfa = pattern_seq();
+
+        assert!(nfa.alphabet.divisions().contains(&Symbol::from(0u64)));
+        assert!(nfa.alphabet.divisions().contains(&Symbol::from(97u64)));
+        assert!(nfa.alphabet.divisions().contains(&Symbol::from(98u64)));
+        assert!(nfa.alphabet.divisions().contains(&Symbol::from(100u64)));
+        assert!(nfa.alphabet.divisions().contains(&Symbol::from(101u64)));
+        assert_eq!(nfa.states.len(),7);
+        assert!(nfa.has_epsilon(nfa.start_state_id,NfaTest::id(2)));
+        assert!(nfa.has_epsilon(NfaTest::id(2),NfaTest::id(3)));
+        assert!(nfa.has_epsilon(NfaTest::id(4),NfaTest::id(5)));
+        assert!(nfa.has_epsilon(nfa.pattern_state_ids[0],nfa.end_state_id));
+        assert!(nfa.has_transition(Symbol::from('a')..=Symbol::from('a'),NfaTest::id(4)));
+        assert!(nfa.has_transition(Symbol::from('d')..=Symbol::from('d'),NfaTest::id(6)));
+    }
+
+    #[test]
+    fn nfa_pattern_many() {
+        let nfa = pattern_many();
+
+        assert!(nfa.alphabet.divisions().contains(&Symbol::from(0u64)));
+        assert!(nfa.alphabet.divisions().contains(&Symbol::from(97u64)));
+        assert!(nfa.alphabet.divisions().contains(&Symbol::from(98u64)));
+        assert_eq!(nfa.states.len(),7);
+        assert!(nfa.has_epsilon(nfa.start_state_id,NfaTest::id(2)));
+        assert!(nfa.has_epsilon(NfaTest::id(2),NfaTest::id(3)));
+        assert!(nfa.has_epsilon(NfaTest::id(3),NfaTest::id(4)));
+        assert!(nfa.has_epsilon(NfaTest::id(5),nfa.pattern_state_ids[0]));
+        assert!(nfa.has_epsilon(nfa.pattern_state_ids[0],NfaTest::id(3)));
+        assert!(nfa.has_epsilon(nfa.pattern_state_ids[0],nfa.end_state_id));
+        assert!(nfa.has_transition(Symbol::from('a')..=Symbol::from('a'),NfaTest::id(5)));
+    }
+
+    #[test]
+    fn nfa_pattern_always() {
+        let nfa = pattern_always();
+
+        assert!(nfa.alphabet.divisions().contains(&Symbol::from(0u64)));
+        assert_eq!(nfa.states.len(),3);
+        assert!(nfa.has_epsilon(nfa.start_state_id,nfa.pattern_state_ids[0]));
+        assert!(nfa.has_epsilon(nfa.pattern_state_ids[0],nfa.end_state_id));
+    }
+
+    #[test]
+    fn nfa_pattern_never() {
+        let nfa = pattern_never();
+
+        assert!(nfa.alphabet.divisions().contains(&Symbol::from(0u64)));
+        assert_eq!(nfa.states.len(),4);
+        assert!(nfa.has_epsilon(nfa.start_state_id,NfaTest::id(2)));
+        assert!(nfa.has_epsilon(NfaTest::id(3),nfa.end_state_id));
+    }
+
+    #[test]
+    fn nfa_simple_rules() {
+        let nfa = simple_rules();
+
+        assert!(nfa.alphabet.divisions().contains(&Symbol::from(0u64)));
+        assert!(nfa.alphabet.divisions().contains(&Symbol::from(97u64)));
+        assert!(nfa.alphabet.divisions().contains(&Symbol::from(98u64)));
+        assert!(nfa.alphabet.divisions().contains(&Symbol::from(99u64)));
+        assert_eq!(nfa.states.len(),9);
+        assert!(nfa.has_epsilon(nfa.start_state_id,NfaTest::id(2)));
+        assert!(nfa.has_epsilon(nfa.start_state_id,NfaTest::id(4)));
+        assert!(nfa.has_epsilon(nfa.pattern_state_ids[0],nfa.end_state_id));
+        assert!(nfa.has_epsilon(NfaTest::id(4),NfaTest::id(5)));
+        assert!(nfa.has_epsilon(NfaTest::id(6),NfaTest::id(7)));
+        assert!(nfa.has_epsilon(nfa.pattern_state_ids[1],nfa.end_state_id));
+        assert!(nfa.has_transition(Symbol::from('a')..=Symbol::from('a'),nfa.pattern_state_ids[0]));
+        assert!(nfa.has_transition(Symbol::from('a')..=Symbol::from('a'),NfaTest::id(6)));
+        assert!(nfa.has_transition(Symbol::from('b')..=Symbol::from('b'),nfa.pattern_state_ids[1]));
+    }
+
+    #[test]
+    fn nfa_complex_rules() {
+        let nfa = complex_rules();
+
+        assert!(nfa.alphabet.divisions().contains(&Symbol::from(0u64)));
+        assert!(nfa.alphabet.divisions().contains(&Symbol::from(32u64)));
+        assert!(nfa.alphabet.divisions().contains(&Symbol::from(33u64)));
+        assert!(nfa.alphabet.divisions().contains(&Symbol::from(97u64)));
+        assert!(nfa.alphabet.divisions().contains(&Symbol::from(98u64)));
+        assert!(nfa.alphabet.divisions().contains(&Symbol::from(99u64)));
+        assert!(nfa.alphabet.divisions().contains(&Symbol::eof()));
+        assert_eq!(nfa.states.len(),26);
+        assert!(nfa.has_transition(Symbol::from(' ')..=Symbol::from(' '),NfaTest::id(4)));
+        assert!(nfa.has_transition(Symbol::from('a')..=Symbol::from('a'),NfaTest::id(6)));
+        assert!(nfa.has_transition(Symbol::from('a')..=Symbol::from('a'),NfaTest::id(10)));
+        assert!(nfa.has_transition(Symbol::from(' ')..=Symbol::from(' '),NfaTest::id(14)));
+        assert!(nfa.has_transition(Symbol::from('b')..=Symbol::from('b'),NfaTest::id(16)));
+        assert!(nfa.has_transition(Symbol::from('b')..=Symbol::from('b'),NfaTest::id(20)));
+        assert!(nfa.has_transition(Symbol::eof()..=Symbol::eof(),nfa.pattern_state_ids[2]));
+        assert!(nfa.has_transition(Symbol::null()..=Symbol::eof(),nfa.pattern_state_ids[3]));
+    }
+}

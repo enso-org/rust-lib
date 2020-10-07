@@ -84,6 +84,12 @@ impl Error {
     pub const INVALID_CHAR:u32 = 0xFFFF;
     /// The `u32` value corresponding to the end of group.
     pub const END_OF_GROUP:u32 = u32::max_value() - 1;
+    /// The `u64` value that corresponds to EOF.
+    pub const END_OF_FILE_64:u64 = u64::max_value();
+    /// The `u64` value that corresponds to an invalid unicode character.
+    pub const INVALID_CHAR_64:u64 = 0xFFFF;
+    /// The `u32` value corresponding to the end of group.
+    pub const END_OF_GROUP_64:u64 = u64::max_value() - 1;
 }
 
 
@@ -107,6 +113,17 @@ impl From<decoder::Char<Error>> for u32 {
             Err(Error::EOF)         => Error::END_OF_FILE,
             Err(Error::InvalidChar) => Error::INVALID_CHAR,
             Err(Error::EndOfGroup)  => Error::END_OF_GROUP,
+        }
+    }
+}
+
+impl From<decoder::Char<Error>> for u64 {
+    fn from(char:decoder::Char<Error>) -> Self {
+        match char.char {
+            Ok (char)               => char as u64,
+            Err(Error::EOF)         => Error::END_OF_FILE_64,
+            Err(Error::InvalidChar) => Error::INVALID_CHAR_64,
+            Err(Error::EndOfGroup)  => Error::END_OF_GROUP_64,
         }
     }
 }
