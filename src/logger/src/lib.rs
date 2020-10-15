@@ -98,6 +98,9 @@ pub trait AnyLogger {
 
     /// Visually groups all logs between group_begin and group_end.
     fn group_end(&self) {}
+
+    /// Start tracing all copies of this logger. See `TraceCopies` docs for details.
+    fn trace_copies(&self) {}
 }
 
 impl<T:AnyLogger> AnyLogger for &T {
@@ -111,6 +114,7 @@ impl<T:AnyLogger> AnyLogger for &T {
     fn error       (&self, msg:impl Message) { T::error       (self,msg) }
     fn group_begin (&self, msg:impl Message) { T::group_begin (self,msg) }
     fn group_end   (&self)                   { T::group_end   (self)     }
+    fn trace_copies(&self)                   { T::trace_copies(self)     }
 }
 
 
