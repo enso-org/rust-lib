@@ -27,6 +27,7 @@ pkg/
 ######################
 
 .idea/
+*.iml
 .vscode/
 *.swp
 .projections.json

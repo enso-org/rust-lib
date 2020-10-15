@@ -9,6 +9,7 @@
 #![warn(missing_debug_implementations)]
 #![warn(unsafe_code)]
 
+mod debug;
 mod clone;
 mod collections;
 mod data;
@@ -24,6 +25,7 @@ mod tp;
 mod vec;
 mod wrapper;
 
+pub use debug::*;
 pub use clone::*;
 pub use collections::*;
 pub use data::*;
