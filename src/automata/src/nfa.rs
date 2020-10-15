@@ -413,6 +413,9 @@ pub mod tests {
         assert!(nfa.has_epsilon(nfa.start_state_id,NfaTest::id(2)));
         assert!(nfa.has_epsilon(nfa.pattern_state_ids[0],nfa.end_state_id));
         assert!(nfa.has_transition(Symbol::from('a')..=Symbol::from('z'),nfa.pattern_state_ids[0]));
+        assert!(nfa[nfa.start_state_id].export);
+        assert!(nfa[nfa.pattern_state_ids[0]].export);
+        assert!(nfa[nfa.end_state_id].export);
     }
 
     #[test]
@@ -433,6 +436,9 @@ pub mod tests {
         assert!(nfa.has_epsilon(nfa.pattern_state_ids[0],nfa.end_state_id));
         assert!(nfa.has_transition(Symbol::from('a')..=Symbol::from('a'),NfaTest::id(4)));
         assert!(nfa.has_transition(Symbol::from('d')..=Symbol::from('d'),NfaTest::id(6)));
+        assert!(nfa[nfa.start_state_id].export);
+        assert!(nfa[nfa.pattern_state_ids[0]].export);
+        assert!(nfa[nfa.end_state_id].export);
     }
 
     #[test]
@@ -451,6 +457,9 @@ pub mod tests {
         assert!(nfa.has_epsilon(nfa.pattern_state_ids[0],nfa.end_state_id));
         assert!(nfa.has_transition(Symbol::from('a')..=Symbol::from('a'),NfaTest::id(4)));
         assert!(nfa.has_transition(Symbol::from('d')..=Symbol::from('d'),NfaTest::id(6)));
+        assert!(nfa[nfa.start_state_id].export);
+        assert!(nfa[nfa.pattern_state_ids[0]].export);
+        assert!(nfa[nfa.end_state_id].export);
     }
 
     #[test]
@@ -468,6 +477,9 @@ pub mod tests {
         assert!(nfa.has_epsilon(nfa.pattern_state_ids[0],NfaTest::id(3)));
         assert!(nfa.has_epsilon(nfa.pattern_state_ids[0],nfa.end_state_id));
         assert!(nfa.has_transition(Symbol::from('a')..=Symbol::from('a'),NfaTest::id(5)));
+        assert!(nfa[nfa.start_state_id].export);
+        assert!(nfa[nfa.pattern_state_ids[0]].export);
+        assert!(nfa[nfa.end_state_id].export);
     }
 
     #[test]
@@ -478,6 +490,9 @@ pub mod tests {
         assert_eq!(nfa.states.len(),3);
         assert!(nfa.has_epsilon(nfa.start_state_id,nfa.pattern_state_ids[0]));
         assert!(nfa.has_epsilon(nfa.pattern_state_ids[0],nfa.end_state_id));
+        assert!(nfa[nfa.start_state_id].export);
+        assert!(nfa[nfa.pattern_state_ids[0]].export);
+        assert!(nfa[nfa.end_state_id].export);
     }
 
     #[test]
@@ -488,6 +503,9 @@ pub mod tests {
         assert_eq!(nfa.states.len(),4);
         assert!(nfa.has_epsilon(nfa.start_state_id,NfaTest::id(2)));
         assert!(nfa.has_epsilon(NfaTest::id(3),nfa.end_state_id));
+        assert!(nfa[nfa.start_state_id].export);
+        assert!(nfa[nfa.pattern_state_ids[0]].export);
+        assert!(nfa[nfa.end_state_id].export);
     }
 
     #[test]
@@ -508,6 +526,10 @@ pub mod tests {
         assert!(nfa.has_transition(Symbol::from('a')..=Symbol::from('a'),nfa.pattern_state_ids[0]));
         assert!(nfa.has_transition(Symbol::from('a')..=Symbol::from('a'),NfaTest::id(6)));
         assert!(nfa.has_transition(Symbol::from('b')..=Symbol::from('b'),nfa.pattern_state_ids[1]));
+        assert!(nfa[nfa.start_state_id].export);
+        assert!(nfa[nfa.pattern_state_ids[0]].export);
+        assert!(nfa[nfa.pattern_state_ids[1]].export);
+        assert!(nfa[nfa.end_state_id].export);
     }
 
     #[test]
@@ -530,5 +552,11 @@ pub mod tests {
         assert!(nfa.has_transition(Symbol::from('b')..=Symbol::from('b'),NfaTest::id(20)));
         assert!(nfa.has_transition(Symbol::eof()..=Symbol::eof(),nfa.pattern_state_ids[2]));
         assert!(nfa.has_transition(Symbol::null()..=Symbol::eof(),nfa.pattern_state_ids[3]));
+        assert!(nfa[nfa.start_state_id].export);
+        assert!(nfa[nfa.pattern_state_ids[0]].export);
+        assert!(nfa[nfa.pattern_state_ids[1]].export);
+        assert!(nfa[nfa.pattern_state_ids[2]].export);
+        assert!(nfa[nfa.pattern_state_ids[3]].export);
+        assert!(nfa[nfa.end_state_id].export);
     }
 }
