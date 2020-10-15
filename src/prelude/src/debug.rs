@@ -1,7 +1,5 @@
 use crate::*;
 
-use uuid::Uuid;
-
 #[cfg(target_arch="wasm32")]
 pub mod internal {
     use wasm_bindgen::prelude::*;
@@ -52,13 +50,25 @@ pub use internal::backtrace;
 /// An utility for tracing all copies of CloneRef-able entity.
 ///
 /// This structure should be added as a field to structure implementing Clone or CloneRef. It will
-/// mark each copy with unique id (the original copy has id of zeros). Once enabled, it will print
+/// mark each copy with unique id (the original copy has id of 0). Once enabled, it will print
 /// backtrace of each clone, clone_ref or drop operation with assigned name (the same for all
 /// copies) and copy id.
 #[derive(Debug,Default)]
 pub struct TraceCopies {
-    clone_id : Uuid,
+    clone_id : u64,
     handle   : Rc<RefCell<Option<ImString>>>,
+}
+
+thread_local! {
+    static NEXT_CLONE_ID : Cell<u64> = Cell::new(1);
+}
+
+fn next_clone_id() -> u64 {
+    NEXT_CLONE_ID.with(|id| {
+        let next = id.get();
+        id.set(next+1);
+        next
+    })
 }
 
 impl TraceCopies {
@@ -79,7 +89,7 @@ impl TraceCopies {
 impl Clone for TraceCopies {
     fn clone(&self) -> Self {
         let borrow   = self.handle.borrow();
-        let clone_id = Uuid::new_v4();
+        let clone_id = next_clone_id();
         let handle   = self.handle.clone();
         if let Some(name) = &*borrow {
             let bt = backtrace();
@@ -92,7 +102,7 @@ impl Clone for TraceCopies {
 impl CloneRef for TraceCopies {
     fn clone_ref(&self) -> Self {
         let borrow   = self.handle.borrow();
-        let clone_id = Uuid::new_v4();
+        let clone_id = next_clone_id();
         let handle   = self.handle.clone_ref();
         if let Some(name) = &*borrow {
             let bt = backtrace();

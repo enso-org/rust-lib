@@ -33,7 +33,6 @@ num          = "0.2.0"
 paste        = "0.1"
 shrinkwraprs = "0.3.0"
 smallvec     = "1.0.0"
-uuid         = { version = "0.8"     , features = ["v4", "wasm-bindgen"] }
 weak-table   = "0.2.3"
 wasm-bindgen = { version = "=0.2.58" , features = ["nightly"] }
 
