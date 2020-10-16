@@ -1,3 +1,11 @@
+---
+layout: developer-doc
+title: Security Policy
+category: summary
+tags: [summary, security, vulnerability, report]
+order: 2
+---
+
 # Security Policy
 
 This document outlines the security policy for all of the libraries in this
@@ -16,8 +24,8 @@ repository.
 
 ## Supported Versions
 
-Security updates for Enso are provided for the versions shown below with a
-:white_check_mark: next to them. No other versions have security updates
+Security updates for these libraries are provided for the versions shown below
+with a :white_check_mark: next to them. No other versions have security updates
 provided.
 
 | Version          | Supported          |

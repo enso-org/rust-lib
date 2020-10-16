@@ -1,3 +1,11 @@
+---
+layout: developer-doc
+title: Contributing to the Enso Rust Libraries
+category: summary
+tags: [summary, contributing]
+order: 1
+---
+
 # Contributing to This Repository
 
 Thank you for your interest in contributing to these libraries! We believe that
