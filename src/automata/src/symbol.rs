@@ -1,7 +1,9 @@
 //! Defines a Symbol that is operated on by the finite automata.
 
 use crate::prelude::*;
+
 use std::cmp::Ordering;
+
 
 
 // =============
@@ -41,6 +43,16 @@ impl Symbol {
     /// Null symbol.
     pub fn null() -> Self {
         Self::new(0)
+    }
+
+    /// The minimum symbol value.
+    pub fn min() -> Self {
+        Self::new(0)
+    }
+
+    /// The maximum symbol value.
+    pub fn max() -> Self {
+        Self::new(SymbolIndex::max_value())
     }
 
     /// Constructor.
