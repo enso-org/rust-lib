@@ -75,7 +75,7 @@ impl Segmentation {
     }
 
     /// Obtain the number of divisions in the segmentation.
-    pub fn len(&self) -> usize {
+    pub fn num_divisions(&self) -> usize {
         self.divisions.len()
     }
 
@@ -167,13 +167,13 @@ mod tests {
         for ix in 0u64..num_to_insert {
             segmentation.insert(Symbol::from(100+ix)..=Symbol::from(100+ix))
         }
-        assert_eq!(segmentation.len(),(num_to_insert+2) as usize);
+        assert_eq!(segmentation.num_divisions(), (num_to_insert+2) as usize);
     }
 
     #[test]
     fn from_divisions_construction() {
         let segmentation = Segmentation::from_divisions(&[0,5,10,15,20]);
-        assert_eq!(segmentation.len(),5);
+        assert_eq!(segmentation.num_divisions(), 5);
         assert!(segmentation.divisions.contains(&Symbol::from(15u64)));
     }
 }
