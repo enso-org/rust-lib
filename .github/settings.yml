@@ -38,6 +38,12 @@ labels:
   - name: "Category: Data"
     color: "#d1f0fd"
     description: The data library
+  - name: "Category: Flexer"
+    color: "#d1f0fd"
+    description: The Flexer library
+  - name: "Category: Generics"
+    color: "#d1f0fd"
+    description: The generics library
   - name: "Category: Generics"
     color: "#d1f0fd"
     description: The generics library
