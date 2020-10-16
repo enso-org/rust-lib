@@ -5,6 +5,7 @@ const spawnSync = require('child_process').spawnSync
 const path      = require('path')
 
 const libImplDirName = 'impl'
+const srcDirName     = 'src'
 
 let args = process.argv.slice(2)
 
@@ -18,21 +19,24 @@ function runSync(cmd, args) {
 
 function testLibrary() {
     cwd = process.cwd()
-    console.log(`In directory ${cwd}`)
-
     containedDirs = fss.readdirSync(cwd, {withFileTypes: true})
         .filter(f => f.isDirectory())
         .map(d => d.name)
 
-    if (containedDirs.includes(libImplDirName)) {
-        process.chdir(path.join(cwd, libImplDirName))
+    if (containedDirs.includes(srcDirName)) {
+        console.log(`In directory ${cwd}`)
+        runSync('wasm-pack',['test', '--node'])
+    } else if (containedDirs.includes(libImplDirName)) {
+        let new_dir = path.join(cwd,libImplDirName)
+        withCwd(new_dir, () => testLibrary())
+    } else {
+        let deeperDirs = containedDirs.map(d => path.join(cwd, d))
+        deeperDirs.forEach(d => withCwd(d, testLibrary))
     }
-
-    runSync('wasm-pack', ['test', '--node'])
 }
 
 async function withCwd(dir, fn) {
-    let cwd = path.dirname(__filename)
+    let cwd = process.cwd()
     process.chdir(dir)
     let out = await fn()
     process.chdir(cwd)
