@@ -3,6 +3,9 @@
 members = [
     "src/automata",
     "src/data",
+    "src/flexer",
+    "src/flexer-testing/definition",
+    "src/flexer-testing/generation",
     "src/generics",
     "src/lazy-reader",
     "src/logger",
