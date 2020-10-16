@@ -174,6 +174,7 @@ pub mod tests {
     use super::*;
     use crate::nfa;
     use test::Bencher;
+    use crate::nfa::tests::NfaTest;
 
 
     // === Utilities ===
@@ -188,6 +189,23 @@ pub mod tests {
 
     fn assert_same_matrix(dfa:&Dfa, expected:&Matrix<State>) {
         assert_eq!(dfa.links,*expected);
+    }
+
+    fn get_name<'a>(nfa:&'a NfaTest, dfa:&Dfa, state:State) -> Option<&'a String> {
+        let sources = &dfa.sources[state.id()];
+        let mut result = None;
+        for source in sources.iter() {
+            let name = nfa.name(*source);
+            if name.is_some() {
+                result = name;
+                break;
+            }
+        }
+        result
+    }
+
+    fn make_state(ix:usize) -> State {
+        State::new(ix)
     }
 
 
@@ -310,6 +328,19 @@ pub mod tests {
             ]
         );
         assert_same_matrix(&dfa,&expected);
+    }
+
+    #[test]
+    fn dfa_named_rules() {
+        let nfa = nfa::tests::named_rules();
+        let dfa = Dfa::from(&nfa.nfa);
+        assert_same_alphabet(&dfa, &nfa);
+        assert_eq!(dfa.sources.len(),5);
+        assert_eq!(get_name(&nfa,&dfa,make_state(0)),None);
+        assert_eq!(get_name(&nfa,&dfa,make_state(1)),Some(&String::from("rule_1")));
+        assert_eq!(get_name(&nfa,&dfa,make_state(2)),Some(&String::from("rule_2")));
+        assert_eq!(get_name(&nfa,&dfa,make_state(3)),Some(&String::from("rule_1")));
+        assert_eq!(get_name(&nfa,&dfa,make_state(4)),Some(&String::from("rule_2")));
     }
 
     // === The Benchmarks ===

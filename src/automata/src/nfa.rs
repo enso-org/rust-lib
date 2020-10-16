@@ -303,20 +303,49 @@ pub mod tests {
         pub start_state_id    : State,
         pub pattern_state_ids : Vec<State>,
         pub end_state_id      : State,
+        pub callbacks         : HashMap<State,String>,
+        pub names             : HashMap<State,String>,
     }
     #[allow(missing_docs)]
     impl NfaTest {
         pub fn make(patterns:Vec<Pattern>) -> Self {
-            let mut nfa          = Nfa::default();
-            let start_state_id   = nfa.start;
+            let mut nfa               = Nfa::default();
+            let start_state_id        = nfa.start;
             let mut pattern_state_ids = vec![];
-            let end_state_id     = nfa.new_state_exported();
+            let end_state_id          = nfa.new_state_exported();
             for pattern in patterns {
                 let id = nfa.new_pattern(start_state_id,&pattern);
                 pattern_state_ids.push(id);
                 nfa.connect(id,end_state_id);
             }
-            Self{nfa,start_state_id,pattern_state_ids,end_state_id}
+            let callbacks = default();
+            let names     = default();
+            Self{nfa,start_state_id,pattern_state_ids,end_state_id,callbacks,names}
+        }
+
+        pub fn make_rules(rules:Vec<Rule>) -> Self {
+            let mut nfa                    = Nfa::default();
+            let start_state_id             = nfa.start;
+            let mut pattern_state_ids      = vec![];
+            let end_state_id               = nfa.new_state_exported();
+            let mut callbacks:HashMap<_,_> = default();
+            let mut names:HashMap<_,_>     = default();
+            for rule in rules {
+                let id = nfa.new_pattern(start_state_id,&rule.pattern);
+                callbacks.insert(id,rule.callback.clone());
+                names.insert(id,rule.name.clone());
+                pattern_state_ids.push(id);
+                nfa.connect(id,end_state_id);
+            }
+            Self{nfa,start_state_id,pattern_state_ids,end_state_id,callbacks,names}
+        }
+
+        pub fn callback(&self, state:State) -> Option<&String> {
+            self.callbacks.get(&state)
+        }
+
+        pub fn name(&self, state:State) -> Option<&String> {
+            self.names.get(&state)
         }
 
         pub fn id(id:usize) -> State {
@@ -345,6 +374,23 @@ pub mod tests {
 
         fn deref(&self) -> &Self::Target {
             &self.nfa
+        }
+    }
+
+    #[allow(missing_docs)]
+    #[derive(Clone,Debug,PartialEq)]
+    pub struct Rule {
+        pattern : Pattern,
+        callback : String,
+        name : String
+    }
+    #[allow(missing_docs)]
+    impl Rule {
+        pub fn new(pattern:&Pattern, callback:impl Str, name:impl Str) -> Rule {
+            let pattern  = pattern.clone();
+            let callback = callback.into();
+            let name     = name.into();
+            Rule{pattern,callback,name}
         }
     }
 
@@ -397,6 +443,16 @@ pub mod tests {
         let any           = Pattern::any();
         let end           = Pattern::eof();
         NfaTest::make(vec![spaced_a_word,spaced_b_word,end,any])
+    }
+
+    pub fn named_rules() -> NfaTest {
+        let a_word = Pattern::char('a').many1();
+        let b_word = Pattern::char('b').many1();
+        let rules = vec![
+            Rule::new(&a_word,"self.on_a_word(reader)","rule_1"),
+            Rule::new(&b_word,"self.on_b_word(reader)","rule_2"),
+        ];
+        NfaTest::make_rules(rules)
     }
 
 
@@ -558,5 +614,32 @@ pub mod tests {
         assert!(nfa[nfa.pattern_state_ids[2]].export);
         assert!(nfa[nfa.pattern_state_ids[3]].export);
         assert!(nfa[nfa.end_state_id].export);
+    }
+
+    #[test]
+    fn nfa_named_rules() {
+        let nfa = named_rules();
+
+        assert_eq!(nfa.states.len(),18);
+        for (ix, _) in nfa.states.iter().enumerate() {
+            let state_id = State::new(ix);
+            if nfa.pattern_state_ids.contains(&state_id) {
+                assert!(nfa.name(state_id).is_some());
+                assert!(nfa.callback(state_id).is_some());
+            } else {
+                assert!(nfa.name(state_id).is_none());
+                assert!(nfa.callback(state_id).is_none());
+            }
+        }
+        assert_eq!(nfa.name(nfa.pattern_state_ids[0]),Some(&("rule_1".to_string())));
+        assert_eq!(
+            nfa.callback(nfa.pattern_state_ids[0]),
+            Some(&("self.on_a_word(reader)".to_string()))
+        );
+        assert_eq!(nfa.name(nfa.pattern_state_ids[1]),Some(&("rule_2".to_string())));
+        assert_eq!(
+            nfa.callback(nfa.pattern_state_ids[1]),
+            Some(&("self.on_b_word(reader)".to_string()))
+        );
     }
 }
