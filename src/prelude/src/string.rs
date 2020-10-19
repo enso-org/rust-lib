@@ -11,6 +11,34 @@ use derive_more::*;
 
 
 
+// =================
+// === StringOps ===
+// =================
+
+pub trait StringOps {
+    fn is_enclosed(&self, first_char:char, last_char:char) -> bool;
+}
+
+impl<T:AsRef<str>> StringOps for T {
+    /// Check if given string starts and ends with given characters.
+    ///
+    /// Optimized to be O(1) if both characters are within ASCII range.
+    fn is_enclosed(&self, first_char:char, last_char:char) -> bool {
+        let text = self.as_ref();
+        if first_char.is_ascii() && last_char.is_ascii() {
+            let bytes = text.as_bytes();
+            bytes.first() == Some(&(first_char as u8)) && bytes.last() == Some(&(last_char as u8))
+        } else {
+            let mut chars = text.chars();
+            let first     = chars.next();
+            let last      = chars.last().or(first);
+            first == Some(first_char) && last == Some(last_char)
+        }
+    }
+}
+
+
+
 // ===========
 // === Str ===
 // ===========
@@ -259,4 +287,50 @@ macro_rules! im_string_newtype {
             }
         }
     )*};
+}
+
+
+
+// =============
+// === Tests ===
+// =============
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_string_ops() {
+        // === Matching against ascii ===
+        assert!("{}".is_enclosed('{','}'));
+        assert!("{ }".is_enclosed('{','}'));
+        assert!(!"{".is_enclosed('{','}'));
+        assert!(!"{a".is_enclosed('{','}'));
+        assert!(!"a}".is_enclosed('{','}'));
+        assert!(!"}".is_enclosed('{','}'));
+        assert!(!"".is_enclosed('{','}'));
+        assert!("{a}".is_enclosed('{','}'));
+        assert!("{字}".is_enclosed('{','}'));
+        assert!(!"{".is_enclosed('{','}'));
+        assert!(!"{字".is_enclosed('{','}'));
+        assert!(!"字}".is_enclosed('{','}'));
+        assert!(!"}".is_enclosed('{','}'));
+        assert!(!"".is_enclosed('{','}'));
+
+
+        // === Matching against non-ascii ===
+        assert!("【】".is_enclosed('【','】'));
+        assert!("【 】".is_enclosed('【','】'));
+        assert!("【 a】".is_enclosed('【','】'));
+        assert!(!"【".is_enclosed('【','】'));
+        assert!(!"【a".is_enclosed('【','】'));
+        assert!(!"a】".is_enclosed('【','】'));
+        assert!(!"】".is_enclosed('【','】'));
+        assert!(!"".is_enclosed('【','】'));
+
+
+        // === Edge case of matching single char string ===
+        assert!("{".is_enclosed('{','{'));
+        assert!("【".is_enclosed('【','【'));
+    }
 }

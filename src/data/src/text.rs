@@ -64,6 +64,11 @@ impl ByteIndex {
         ByteIndex {value}
     }
 
+    /// Map given Range<usize> into Range<ByteIndex>.
+    pub fn new_range(value:Range<usize>) -> Range<Self> {
+        ByteIndex::new(value.start) .. ByteIndex::new(value.end)
+    }
+
     /// Index of the next byte.
     pub fn next(self) -> Self {
         ByteIndex {value: self.value + 1}
@@ -394,6 +399,22 @@ impl TextLocation {
         Self::after_chars(before)
     }
 
+    /// Convert self to the text index.
+    ///
+    /// This operation involves iterating over content characters and is O(n).
+    ///
+    /// Behavior for out-of-bounds index conversion is unspecified but will never panic.
+    pub fn to_index(&self, content:impl AsRef<str>) -> Index {
+        let line_index = match self.line {
+            0 => 0,
+            _ => {
+                let content = content.as_ref();
+                newline_indices(content).nth(self.line.saturating_sub(1)).map_or(0, |i| i + 1)
+            }
+        };
+        Index::new(line_index + self.column)
+    }
+
     /// Converts a range of indices into a range of TextLocation. It iterates over all characters
     /// before range's end.
     pub fn convert_range(content:impl Str, range:&Range<Index>) -> Range<Self> {
@@ -417,7 +438,7 @@ impl TextLocation {
     }
 
     fn after_chars<IntoCharsIter>(chars:IntoCharsIter) -> Self
-    where IntoCharsIter : IntoIterator<Item=char, IntoIter:Clone> {
+        where IntoCharsIter : IntoIterator<Item=char, IntoIter:Clone> {
         let iter             = chars.into_iter();
         let len              = iter.clone().count();
         let newlines         = iter.enumerate().filter(|(_,c)| *c == '\n');
@@ -529,6 +550,21 @@ impl<Index,Content:Default> TextChangeTemplate<Index,Content> {
 // === Utilities ===
 // =================
 
+/// Get indices (char-counting) of the new line characters.
+pub fn newline_indices(text:&str) -> impl Iterator<Item=usize> + '_ {
+    text.chars().enumerate().filter_map(|(ix,c)| (c == '\n').as_some(ix))
+}
+
+/// Get indices (byte-counting) of the new line characters.
+pub fn newline_byte_indices(text:&str) -> impl Iterator<Item=usize> + '_ {
+    text.as_bytes().iter().enumerate().filter_map(|(ix,c)|(*c == b'\n').as_some(ix))
+}
+
+/// Get indices (byte-counting) of the new line characters, beginning from the text end.
+pub fn rev_newline_byte_indices(text:&str) -> impl Iterator<Item=usize> + '_ {
+    text.as_bytes().iter().enumerate().rev().filter_map(|(ix,c)| (*c == b'\n').as_some(ix))
+}
+
 /// Split text to lines handling both CR and CRLF line endings.
 pub fn split_to_lines(text:&str) -> impl Iterator<Item=String> + '_ {
     text.split('\n').map(cut_cr_at_end_of_line).map(|s| s.to_string())
@@ -555,23 +591,29 @@ mod test {
 
     use super::Index;
 
+    fn assert_round_trip(str:&str, index:Index, location:TextLocation) {
+        assert_eq!(TextLocation::from_index(str,index),location);
+        assert_eq!(location.to_index(str),index);
+    }
+
     #[test]
     fn converting_index_to_location() {
         let str = "first\nsecond\nthird";
-        assert_eq!(TextLocation::from_index(str,Index::new(0)),  TextLocation {line:0, column:0});
-        assert_eq!(TextLocation::from_index(str,Index::new(5)),  TextLocation {line:0, column:5});
-        assert_eq!(TextLocation::from_index(str,Index::new(6)),  TextLocation {line:1, column:0});
-        assert_eq!(TextLocation::from_index(str,Index::new(9)),  TextLocation {line:1, column:3});
-        assert_eq!(TextLocation::from_index(str,Index::new(12)), TextLocation {line:1, column:6});
-        assert_eq!(TextLocation::from_index(str,Index::new(13)), TextLocation {line:2, column:0});
-        assert_eq!(TextLocation::from_index(str,Index::new(18)), TextLocation {line:2, column:5});
+        assert_round_trip(str,Index::new(0),  TextLocation {line:0, column:0});
+        assert_round_trip(str,Index::new(5),  TextLocation {line:0, column:5});
+        assert_round_trip(str,Index::new(6),  TextLocation {line:1, column:0});
+        assert_round_trip(str,Index::new(9),  TextLocation {line:1, column:3});
+        assert_round_trip(str,Index::new(12), TextLocation {line:1, column:6});
+        assert_round_trip(str,Index::new(13), TextLocation {line:2, column:0});
+        assert_round_trip(str,Index::new(18), TextLocation {line:2, column:5});
 
         let str = "";
-        assert_eq!(TextLocation {line:0, column:0}, TextLocation::from_index(str,Index::new(0)));
+        assert_round_trip(str,Index::new(0), TextLocation {line:0, column:0});
+        //assert_eq!(TextLocation {line:0, column:0}, TextLocation::from_index(str,Index::new(0)));
 
         let str= "\n";
-        assert_eq!(TextLocation {line:0, column:0}, TextLocation::from_index(str,Index::new(0)));
-        assert_eq!(TextLocation {line:1, column:0}, TextLocation::from_index(str,Index::new(1)));
+        assert_round_trip(str,Index::new(0), TextLocation {line:0, column:0});
+        assert_round_trip(str,Index::new(1), TextLocation {line:1, column:0});
     }
 
     #[test]
