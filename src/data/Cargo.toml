@@ -1,6 +1,6 @@
 [package]
 name    = "enso-data"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["Enso Team <contact@luna-lang.org>"]
 edition = "2018"
 

@@ -1,6 +1,6 @@
 [package]
 name    = "enso-prelude"
-version = "0.1.6"
+version = "0.1.7"
 authors = ["Enso Team <enso-dev@enso.org>"]
 edition = "2018"
 
