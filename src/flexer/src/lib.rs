@@ -779,7 +779,7 @@
 //! # use enso_flexer::group::Registry;
 //! # use enso_flexer::group;
 //! # use enso_flexer::prelude::AnyLogger;
-//! use enso_flexer::prelude::LazyReader;
+//! use enso_flexer::prelude::ReaderOps;
 //! # use enso_flexer::prelude::GenError;
 //! # use enso_flexer::prelude::logger::Disabled;
 //! # use enso_flexer::prelude::reader::BookmarkManager;
@@ -939,7 +939,7 @@
 //! # }
 //!
 //! impl Lexer {
-//!      pub fn on_first_word<R:LazyReader>(&mut self, _reader:&mut R) {
+//!      pub fn on_first_word<R:ReaderOps>(&mut self, _reader:&mut R) {
 //!         let str = self.current_match.clone();
 //!         let ast = Token::Word(str);
 //!         self.output.push(ast);
@@ -947,25 +947,25 @@
 //!         self.push_state(id);
 //!     }
 //!
-//!     pub fn on_spaced_word<R:LazyReader>(&mut self, _reader:&mut R) {
+//!     pub fn on_spaced_word<R:ReaderOps>(&mut self, _reader:&mut R) {
 //!         let str = self.current_match.clone();
 //!         let ast = Token::Word(String::from(str.trim()));
 //!         self.output.push(ast);
 //!     }
 //!
-//!     pub fn on_err_suffix_first_word<R:LazyReader>(&mut self, _reader:&mut R) {
+//!     pub fn on_err_suffix_first_word<R:ReaderOps>(&mut self, _reader:&mut R) {
 //!         let ast = Token::Unrecognized(self.current_match.clone());
 //!         self.output.push(ast);
 //!     }
 //!
-//!     pub fn on_err_suffix<R:LazyReader>(&mut self, reader:&mut R) {
+//!     pub fn on_err_suffix<R:ReaderOps>(&mut self, reader:&mut R) {
 //!         self.on_err_suffix_first_word(reader);
 //!         self.pop_state();
 //!     }
 //!
-//!     pub fn on_no_err_suffix_first_word<R:LazyReader>(&mut self, _reader:&mut R) {}
+//!     pub fn on_no_err_suffix_first_word<R:ReaderOps>(&mut self, _reader:&mut R) {}
 //!
-//!     pub fn on_no_err_suffix<R:LazyReader>(&mut self, reader:&mut R) {
+//!     pub fn on_no_err_suffix<R:ReaderOps>(&mut self, reader:&mut R) {
 //!         self.on_no_err_suffix_first_word(reader);
 //!         self.pop_state();
 //!     }
@@ -1033,7 +1033,7 @@ pub mod group;
 pub mod prelude {
     pub use crate::generate::GenError;
     pub use enso_prelude::*;
-    pub use lazy_reader::LazyReader;
+    pub use lazy_reader::ReaderOps;
     pub use lazy_reader::Reader;
     pub use logger::AnyLogger;
 

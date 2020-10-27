@@ -7,7 +7,7 @@
 
 use enso_flexer::*;
 
-use crate::prelude::LazyReader;
+use crate::prelude::ReaderOps;
 use crate::prelude::logger::AnyLogger;
 use crate::prelude::logger::Disabled;
 use crate::prelude::reader::BookmarkManager;
@@ -123,7 +123,7 @@ impl Lexer1 {
         Lexer1 {lexer}
     }
 
-    pub fn my_test_fun<R:LazyReader>(&mut self, _reader:&mut R) {
+    pub fn my_test_fun<R: ReaderOps>(&mut self, _reader:&mut R) {
         unimplemented!()
     }
 }
@@ -192,7 +192,7 @@ impl Lexer2 {
         Lexer2{lexer}
     }
 
-    pub fn my_test_fun<R:LazyReader>(&mut self, _reader:&mut R) {
+    pub fn my_test_fun<R: ReaderOps>(&mut self, _reader:&mut R) {
         unimplemented!()
     }
 }
@@ -264,7 +264,7 @@ impl Lexer3 {
         Lexer3{lexer}
     }
 
-    pub fn my_test_fun<R:LazyReader>(&mut self, _reader:&mut R) {
+    pub fn my_test_fun<R: ReaderOps>(&mut self, _reader:&mut R) {
         unimplemented!()
     }
 }
@@ -370,7 +370,7 @@ impl Lexer4 {
         Lexer4{lexer}
     }
 
-    pub fn my_test_fun<R:LazyReader>(&mut self, _reader:&mut R) {
+    pub fn my_test_fun<R: ReaderOps>(&mut self, _reader:&mut R) {
         unimplemented!()
     }
 }

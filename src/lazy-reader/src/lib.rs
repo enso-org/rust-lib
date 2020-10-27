@@ -150,12 +150,12 @@ impl BookmarkId {
 
 
 
-// ==================
-// === LazyReader ===
-// ==================
+// =================
+// === ReaderOps ===
+// =================
 
-/// The behaviour needed by the lazy reader interface.
-pub trait LazyReader {
+/// The behaviour needed by the reader interface.
+pub trait ReaderOps {
     /// Read the next character from input.
     fn next_char(&mut self, bookmarks:&mut BookmarkManager) -> Result<char,Error>;
     /// Advance along the input without returning the character.
@@ -239,7 +239,7 @@ impl<D:Decoder,R:Read<Item=D::Word>> Reader<D,R> {
 
 // === Trait Impls ===
 
-impl<D:Decoder, R:Read<Item=D::Word>> LazyReader for Reader<D,R> {
+impl<D:Decoder, R:Read<Item=D::Word>> ReaderOps for Reader<D,R> {
     fn next_char(&mut self, bookmarks:&mut BookmarkManager) -> Result<char,Error> {
         if self.empty() { self.character.char = Err(Error::EOF); return Err(Error::EOF) }
 
@@ -387,14 +387,14 @@ impl BookmarkManager {
     }
 
     /// Bookmarks the current position in `reader` using `bookmark`.
-    pub fn bookmark<R:LazyReader>(&mut self, bookmark:BookmarkId, reader:&mut R) {
+    pub fn bookmark<R: ReaderOps>(&mut self, bookmark:BookmarkId, reader:&mut R) {
         self.bookmarks[bookmark.id].offset = reader.offset() - reader.character().size;
         self.bookmarks[bookmark.id].length = reader.result().len();
         self.bookmarks[bookmark.id].set    = true
     }
 
     /// Unsets a bookmark.
-    pub fn unset<R:LazyReader>(&mut self, bookmark:BookmarkId) {
+    pub fn unset<R: ReaderOps>(&mut self, bookmark:BookmarkId) {
         self.bookmarks[bookmark.id].offset = 0;
         self.bookmarks[bookmark.id].length = 0;
         self.bookmarks[bookmark.id].set    = false
@@ -411,7 +411,7 @@ impl BookmarkManager {
     }
 
     /// Rewind the reader to the position marked by `bookmark`.
-    pub fn rewind<R:LazyReader>(&mut self, bookmark:BookmarkId, reader:&mut R) {
+    pub fn rewind<R: ReaderOps>(&mut self, bookmark:BookmarkId, reader:&mut R) {
         let bookmark = self.bookmarks.get(bookmark.id).expect("Bookmark must exist.");
         reader.set_offset(bookmark.offset);
         reader.truncate_match(bookmark.length);

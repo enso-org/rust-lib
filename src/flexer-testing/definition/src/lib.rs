@@ -128,7 +128,7 @@ impl TestLexer {
 /// Rules for the root state.
 #[allow(dead_code,missing_docs)]
 impl TestLexer {
-    fn on_first_word<R:LazyReader>(&mut self, _reader:&mut R) {
+    fn on_first_word<R:ReaderOps>(&mut self, _reader:&mut R) {
         let str = self.current_match.clone();
         let ast = Token::Word(str);
         self.output.push(ast);
@@ -136,12 +136,12 @@ impl TestLexer {
         self.push_state(id);
     }
 
-    fn on_err_suffix_first_word<R:LazyReader>(&mut self, _reader:&mut R) {
+    fn on_err_suffix_first_word<R:ReaderOps>(&mut self, _reader:&mut R) {
         let ast = Token::Unrecognized(self.current_match.clone());
         self.output.push(ast);
     }
 
-    fn on_no_err_suffix_first_word<R:LazyReader>(&mut self, _reader:&mut R) {}
+    fn on_no_err_suffix_first_word<R:ReaderOps>(&mut self, _reader:&mut R) {}
 
     fn rules_in_root(lexer:&mut TestLexer) {
         let a_word        = Pattern::char('a').many1();
@@ -162,18 +162,18 @@ impl TestLexer {
 /// Rules for the "seen first word" state.
 #[allow(dead_code,missing_docs)]
 impl TestLexer {
-    fn on_spaced_word<R:LazyReader>(&mut self, _reader:&mut R) {
+    fn on_spaced_word<R:ReaderOps>(&mut self, _reader:&mut R) {
         let str = self.current_match.clone();
         let ast = Token::Word(String::from(str.trim()));
         self.output.push(ast);
     }
 
-    fn on_err_suffix<R:LazyReader>(&mut self, reader:&mut R) {
+    fn on_err_suffix<R:ReaderOps>(&mut self, reader:&mut R) {
         self.on_err_suffix_first_word(reader);
         self.pop_state();
     }
 
-    fn on_no_err_suffix<R:LazyReader>(&mut self, reader:&mut R) {
+    fn on_no_err_suffix<R:ReaderOps>(&mut self, reader:&mut R) {
         self.on_no_err_suffix_first_word(reader);
         self.pop_state();
     }

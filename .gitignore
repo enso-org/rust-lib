@@ -1,4 +1,10 @@
 
+#####################
+## Generated Files ##
+#####################
+
+/src/flexer-testing/generation/src/generated/
+
 ##########
 ## Node ##
 ##########

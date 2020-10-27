@@ -72,7 +72,7 @@ pub fn wrap_in_impl_for
 pub fn run_function(output_type_name:impl Str) -> Result<ImplItem,GenError> {
     let output_type_name = str_to_path(output_type_name)?;
     let tree:ImplItem    = parse_quote! {
-        pub fn run<R:LazyReader>(&mut self, mut reader:R) -> LexingResult<#output_type_name> {
+        pub fn run<R:ReaderOps>(&mut self, mut reader:R) -> LexingResult<#output_type_name> {
             self.set_up();
             reader.advance_char(&mut self.bookmarks);
             while self.run_current_state(&mut reader) == StageStatus::ExitSuccess {}
@@ -95,7 +95,7 @@ pub fn run_function(output_type_name:impl Str) -> Result<ImplItem,GenError> {
 /// Generate the function responsible for executing the lexer in its current state.
 pub fn run_current_state_function() -> ImplItem {
     let tree:ImplItem = parse_quote! {
-        fn run_current_state<R:LazyReader>(&mut self, reader:&mut R) -> StageStatus {
+        fn run_current_state<R:ReaderOps>(&mut self, reader:&mut R) -> StageStatus {
             self.status = StageStatus::Initial;
             let mut finished = false;
 
@@ -149,7 +149,7 @@ pub fn run_current_state_function() -> ImplItem {
 pub fn step(groups:&group::Registry) -> ImplItem {
     let arms = groups.all().iter().map(|g| step_match_arm(g.id.into())).collect_vec();
     parse_quote! {
-        fn step<R:LazyReader>(&mut self, next_state:SubStateId, reader:&mut R) -> StageStatus {
+        fn step<R:ReaderOps>(&mut self, next_state:SubStateId, reader:&mut R) -> StageStatus {
             let current_state:usize = self.current_state().into();
             match current_state {
                 #(#arms)*
@@ -222,7 +222,7 @@ pub fn transition_for_dfa<S:BuildHasher>
 ) -> Result<ImplItem,GenError> {
     let match_expr:Expr   = match_for_transition(dfa,state_ix,data,has_overlaps)?;
     let function:ImplItem = parse_quote! {
-        fn #transition_name<R:LazyReader>(&mut self, reader:&mut R) -> StageStatus {
+        fn #transition_name<R:ReaderOps>(&mut self, reader:&mut R) -> StageStatus {
             #match_expr
         }
     };
@@ -365,7 +365,7 @@ pub fn dispatch_in_state(dfa:&Dfa, id:usize) -> Result<ImplItem,GenError> {
         }
     };
     let func:ImplItem = parse_quote! {
-        fn #dispatch_name<R:LazyReader>
+        fn #dispatch_name<R:ReaderOps>
         ( &mut self
         , new_state_index:SubStateId
         , reader:&mut R
@@ -399,7 +399,7 @@ pub fn rule_for_state(state:nfa::State, automaton:&AutomatonData) -> Result<Impl
                 return Err(GenError::BadCallbackArgument)
             }
             let tree:ImplItem = parse_quote! {
-                fn #rule_name<R:LazyReader>(&mut self, reader:&mut R) {
+                fn #rule_name<R:ReaderOps>(&mut self, reader:&mut R) {
                     #code
                 }
             };

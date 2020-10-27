@@ -25,7 +25,7 @@ bench      = true
 enso-automata    = { version = "0.1.5", path = "../automata"    }
 enso-logger      = { version = "0.1.3", path = "../logger"      }
 enso-prelude     = { version = "0.1.7", path = "../prelude"     }
-enso-lazy-reader = { version = "0.1.1", path = "../lazy-reader" }
+enso-lazy-reader = { version = "0.1.2", path = "../lazy-reader" }
 enso-macro-utils = { version = "0.1.1", path = "../macro-utils" }
 
 itertools            = "0.8"
