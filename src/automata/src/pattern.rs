@@ -196,6 +196,18 @@ impl Pattern {
 
 // === Trait Impls ====
 
+impl From<&str> for Pattern {
+    fn from(string:&str) -> Self {
+        Pattern::all_of(string)
+    }
+}
+
+impl From<char> for Pattern {
+    fn from(char:char) -> Self {
+        Pattern::char(char)
+    }
+}
+
 impl AsRef<Pattern> for Pattern {
     fn as_ref(&self) -> &Pattern {
         self
@@ -287,7 +299,7 @@ impl Shr<&Pattern> for &Pattern {
 ///
 /// It is equivalent to `Pattern::char(...)`.
 #[macro_export]
-macro_rules! c {
+macro_rules! char {
     ($char:literal) => {
         Pattern::char($char)
     }
@@ -297,7 +309,7 @@ macro_rules! c {
 ///
 /// It is equivalent to `Pattern::all_of(...)`.
 #[macro_export]
-macro_rules! l {
+macro_rules! literal {
     ($lit:literal) => {
         Pattern::all_of($lit)
     }
@@ -315,29 +327,33 @@ mod tests {
 
     #[test]
     fn pattern_many1() {
-        let many1    = l!("abc").many1();
-        let expected = l!("abc") >> Pattern::Many(Box::new(l!("abc")));
+        let many1    = literal!("abc").many1();
+        let expected = literal!("abc") >> Pattern::Many(Box::new(literal!("abc")));
         assert_eq!(many1,expected);
     }
 
     #[test]
     fn pattern_opt() {
-        let opt      = l!("abc").opt();
-        let expected = l!("abc") | Pattern::Always;
+        let opt      = literal!("abc").opt();
+        let expected = literal!("abc") | Pattern::Always;
         assert_eq!(opt,expected);
     }
 
     #[test]
     fn pattern_all_of() {
         let all_of   = Pattern::all_of("abcde");
-        let expected = Pattern::Seq(vec![Pattern::Always,c!('a'),c!('b'),c!('c'),c!('d'),c!('e')]);
+        let expected = Pattern::Seq(vec![
+            Pattern::Always,char!('a'),char!('b'),char!('c'),char!('d'),char!('e')
+        ]);
         assert_eq!(all_of,expected);
     }
 
     #[test]
     fn pattern_any_of() {
         let any_of   = Pattern::any_of("abcde");
-        let expected = Pattern::Or(vec![Pattern::Never,c!('a'),c!('b'),c!('c'),c!('d'),c!('e')]);
+        let expected = Pattern::Or(vec![
+            Pattern::Never,char!('a'),char!('b'),char!('c'),char!('d'),char!('e')
+        ]);
         assert_eq!(any_of,expected);
     }
 
@@ -379,14 +395,14 @@ mod tests {
 
     #[test]
     fn pattern_repeat() {
-        let repeat   = Pattern::repeat(&c!('a'),5);
+        let repeat   = Pattern::repeat(&char!('a'),5);
         let expected = Pattern::all_of("aaaaa");
         assert_eq!(repeat,expected);
     }
 
     #[test]
     fn pattern_repeat_between() {
-        let repeat_between = Pattern::repeat_between(&c!('a'),2,4);
+        let repeat_between = Pattern::repeat_between(&char!('a'),2,4);
         let expected       = Pattern::never() | Pattern::all_of("aa") | Pattern::all_of("aaa");
         assert_eq!(repeat_between,expected);
     }
@@ -408,12 +424,12 @@ mod tests {
 
     #[test]
     fn pattern_operator_shr_collapse() {
-        let seq = Pattern::Seq(vec![c!('a'),c!('b')]);
-        let lit = c!('c');
-        assert_eq!(&seq >> &seq,Pattern::Seq(vec![c!('a'),c!('b'),c!('a'),c!('b')]));
-        assert_eq!(&seq >> &lit,Pattern::Seq(vec![c!('a'),c!('b'),c!('c')]));
-        assert_eq!(&lit >> &seq,Pattern::Seq(vec![c!('c'),c!('a'),c!('b')]));
-        assert_eq!(&lit >> &lit,Pattern::Seq(vec![c!('c'),c!('c')]));
+        let seq = Pattern::Seq(vec![char!('a'),char!('b')]);
+        let lit = char!('c');
+        assert_eq!(&seq >> &seq,Pattern::Seq(vec![char!('a'),char!('b'),char!('a'),char!('b')]));
+        assert_eq!(&seq >> &lit,Pattern::Seq(vec![char!('a'),char!('b'),char!('c')]));
+        assert_eq!(&lit >> &seq,Pattern::Seq(vec![char!('c'),char!('a'),char!('b')]));
+        assert_eq!(&lit >> &lit,Pattern::Seq(vec![char!('c'),char!('c')]));
     }
 
     #[test]
@@ -433,24 +449,24 @@ mod tests {
 
     #[test]
     fn pattern_operator_bit_or_collapse() {
-        let seq = Pattern::Or(vec![c!('a'),c!('b')]);
-        let lit = c!('c');
-        assert_eq!(&seq | &seq,Pattern::Or(vec![c!('a'),c!('b'),c!('a'),c!('b')]));
-        assert_eq!(&seq | &lit,Pattern::Or(vec![c!('a'),c!('b'),c!('c')]));
-        assert_eq!(&lit | &seq,Pattern::Or(vec![c!('c'),c!('a'),c!('b')]));
-        assert_eq!(&lit | &lit,Pattern::Or(vec![c!('c'),c!('c')]));
+        let seq = Pattern::Or(vec![char!('a'),char!('b')]);
+        let lit = char!('c');
+        assert_eq!(&seq | &seq,Pattern::Or(vec![char!('a'),char!('b'),char!('a'),char!('b')]));
+        assert_eq!(&seq | &lit,Pattern::Or(vec![char!('a'),char!('b'),char!('c')]));
+        assert_eq!(&lit | &seq,Pattern::Or(vec![char!('c'),char!('a'),char!('b')]));
+        assert_eq!(&lit | &lit,Pattern::Or(vec![char!('c'),char!('c')]));
     }
 
     #[test]
     fn pattern_macro_character() {
-        let with_macro = c!('c');
+        let with_macro = char!('c');
         let explicit   = Pattern::char('c');
         assert_eq!(with_macro,explicit);
     }
 
     #[test]
     fn pattern_macro_literal() {
-        let with_macro = l!("abcde");
+        let with_macro = literal!("abcde");
         let explicit   = Pattern::all_of("abcde");
         assert_eq!(with_macro,explicit);
     }

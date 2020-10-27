@@ -1,6 +1,6 @@
 [package]
 name    = "enso-flexer"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["Enso Team <enso-dev@enso.org>"]
 edition = "2018"
 
@@ -22,9 +22,9 @@ test       = true
 bench      = true
 
 [dependencies]
-enso-automata    = { version = "0.1.4", path = "../automata"    }
+enso-automata    = { version = "0.1.5", path = "../automata"    }
 enso-logger      = { version = "0.1.3", path = "../logger"      }
-enso-prelude     = { version = "0.1.5", path = "../prelude"     }
+enso-prelude     = { version = "0.1.7", path = "../prelude"     }
 enso-lazy-reader = { version = "0.1.1", path = "../lazy-reader" }
 enso-macro-utils = { version = "0.1.1", path = "../macro-utils" }
 
