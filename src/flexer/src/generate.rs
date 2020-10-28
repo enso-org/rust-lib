@@ -412,7 +412,7 @@ pub fn rule_for_state(state:nfa::State, automaton:&AutomatonData) -> Result<Impl
 #[allow(clippy::cmp_owned)]
 pub fn has_reader_arg(expr:&Expr) -> bool {
     match expr {
-        Expr::MethodCall(expr) => match expr.args.last() {
+        Expr::MethodCall(expr) => match expr.args.first() {
             Some(Expr::Path(path)) => {
                 match path.path.segments.first() {
                     Some(segment) => {

@@ -162,7 +162,7 @@ impl TestLexer {
 /// Rules for the "seen first word" state.
 #[allow(dead_code,missing_docs)]
 impl TestLexer {
-    fn on_spaced_word<R:ReaderOps>(&mut self, _reader:&mut R) {
+    fn on_spaced_word<R:ReaderOps>(&mut self, _reader:&mut R, _test_arg:bool) {
         let str = self.current_match.clone();
         let ast = Token::Word(String::from(str.trim()));
         self.output.push(ast);
@@ -190,8 +190,8 @@ impl TestLexer {
         let seen_first_word_group_id = lexer.seen_first_word_state;
         let seen_first_word_group    = lexer.groups_mut().group_mut(seen_first_word_group_id);
 
-        seen_first_word_group.create_rule(&spaced_a_word,"self.on_spaced_word(reader)");
-        seen_first_word_group.create_rule(&spaced_b_word,"self.on_spaced_word(reader)");
+        seen_first_word_group.create_rule(&spaced_a_word,"self.on_spaced_word(reader,true)");
+        seen_first_word_group.create_rule(&spaced_b_word,"self.on_spaced_word(reader,false)");
         seen_first_word_group.create_rule(&end,          "self.on_no_err_suffix(reader)");
         seen_first_word_group.create_rule(&any,          "self.on_err_suffix(reader)");
     }
