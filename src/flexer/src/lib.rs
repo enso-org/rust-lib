@@ -982,7 +982,7 @@
 //!
 //! 1.  They have a type parameter `R` that conforms to the [`prelude::LazyReader`] trait.
 //! 2.  They take an argument of type `R`, that is the reader over which the lexer is running as the
-//!     _last_ argument to the function.
+//!     _first_ non-`self` argument to the function.
 //! 3.  Any additional arguments must be valid in the scope in which the specialisation rules are
 //!     going to be generated.
 //!
