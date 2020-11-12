@@ -115,6 +115,11 @@ impl ImString {
         let content = Rc::new(content.into());
         Self {content}
     }
+
+    /// Extract a string slice containing the entire string.
+    pub fn as_str(&self) -> &str {
+        &self.content
+    }
 }
 
 impl std::fmt::Display for ImString {

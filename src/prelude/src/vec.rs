@@ -21,6 +21,12 @@ pub trait VecOps {
 
     /// Extend the vector with the provided `iter`.
     fn extended<I:IntoIterator<Item=Self::Item>>(self, iter:I) -> Self;
+
+    /// Push element to the vector.
+    fn pushed(self, item:Self::Item) -> Self;
+
+    /// Self but reversed.
+    fn reversed(self) -> Self;
 }
 
 impl<T> VecOps for Vec<T> {
@@ -42,6 +48,16 @@ impl<T> VecOps for Vec<T> {
 
     fn extended<I:IntoIterator<Item=Self::Item>>(mut self, iter:I) -> Self {
         self.extend(iter);
+        self
+    }
+
+    fn pushed(mut self, item:Self::Item) -> Self {
+        self.push(item);
+        self
+    }
+
+    fn reversed(mut self) -> Self {
+        self.reverse();
         self
     }
 }
