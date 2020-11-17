@@ -22,7 +22,6 @@ pub struct Switch<T> {
 
 impl<T> Switch<T> {
     /// Constructor.
-    #[allow(non_snake_case)]
     pub fn new(value:T, is_on:bool) -> Self {
         Self {value,is_on}
     }
@@ -55,13 +54,13 @@ impl<T> Switch<T> {
     }
 
     /// Change the on / off status while consuming the value.
-    pub fn into_switch(mut self, is_on:bool) -> Self {
+    pub fn switched(mut self, is_on:bool) -> Self {
         self.switch(is_on);
         self
     }
 
     /// Toggle the on / off status while consuming the value.
-    pub fn into_toggle(mut self) -> Self {
+    pub fn toggled(mut self) -> Self {
         self.toggle();
         self
     }
