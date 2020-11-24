@@ -104,4 +104,43 @@ impl<T> Switch<T> {
     pub fn into_off(self) -> Option<T> {
         if self.is_off() { Some(self.value) } else { None }
     }
+
+    /// Get the value if the switch was turned on while consuming self, or a default it it was off.
+    pub fn into_on_or(self, default:T) -> T {
+        if self.is_on() { self.value } else { default }
+    }
+
+    /// Get the value if the switch was turned off while consuming self or a default if it was on.
+    pub fn into_off_or(self, default:T) -> T {
+        if self.is_off() { self.value } else { default }
+    }
+}
+
+
+
+// =============
+// === Tests ===
+// =============
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_into_on_or() {
+        let switch_on = Switch::On(1.0);
+        assert_eq!(switch_on.into_on_or(0.0), 1.0);
+
+        let switch_off = Switch::Off(2.0);
+        assert_eq!(switch_off.into_on_or(0.0), 0.0);
+    }
+
+    #[test]
+    fn test_into_off_or() {
+        let switch_on = Switch::On(1.0);
+        assert_eq!(switch_on.into_off_or(0.0), 0.0);
+
+        let switch_off = Switch::Off(2.0);
+        assert_eq!(switch_off.into_off_or(0.0), 2.0);
+    }
 }
