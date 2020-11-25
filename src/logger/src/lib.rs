@@ -96,8 +96,21 @@ pub trait AnyLogger {
     /// Visually groups all logs between group_begin and group_end.
     fn group_begin(&self, _msg:impl Message) {}
 
+    /// Visually groups all logs between group_begin and group_end. Log with warning level
+    /// verbosity.
+    fn warning_group_begin(&self, _msg:impl Message) {}
+
+    /// Visually groups all logs between group_begin and group_end. Log with error level verbosity.
+    fn error_group_begin(&self, _msg:impl Message) {}
+
     /// Visually groups all logs between group_begin and group_end.
     fn group_end(&self) {}
+
+    /// Visually groups all logs between group_begin and group_end.
+    fn warning_group_end(&self) {}
+
+    /// Visually groups all logs between group_begin and group_end.
+    fn error_group_end(&self) {}
 
     /// Start tracing all copies of this logger. See `TraceCopies` docs for details.
     fn trace_copies(&self) {}
@@ -105,16 +118,20 @@ pub trait AnyLogger {
 
 impl<T:AnyLogger> AnyLogger for &T {
     type Owned = T::Owned;
-    fn path        (&self) -> &str { T::path(self) }
-    fn new         (path:impl Into<ImString>) -> Self::Owned { T::new(path) }
-    fn trace       (&self, msg:impl Message) { T::trace       (self,msg) }
-    fn debug       (&self, msg:impl Message) { T::debug       (self,msg) }
-    fn info        (&self, msg:impl Message) { T::info        (self,msg) }
-    fn warning     (&self, msg:impl Message) { T::warning     (self,msg) }
-    fn error       (&self, msg:impl Message) { T::error       (self,msg) }
-    fn group_begin (&self, msg:impl Message) { T::group_begin (self,msg) }
-    fn group_end   (&self)                   { T::group_end   (self)     }
-    fn trace_copies(&self)                   { T::trace_copies(self)     }
+    fn path                (&self) -> &str { T::path(self) }
+    fn new                 (path:impl Into<ImString>) -> Self::Owned { T::new(path) }
+    fn trace               (&self, msg:impl Message) { T::trace               (self,msg) }
+    fn debug               (&self, msg:impl Message) { T::debug               (self,msg) }
+    fn info                (&self, msg:impl Message) { T::info                (self,msg) }
+    fn warning             (&self, msg:impl Message) { T::warning             (self,msg) }
+    fn error               (&self, msg:impl Message) { T::error               (self,msg) }
+    fn group_begin         (&self, msg:impl Message) { T::group_begin         (self,msg) }
+    fn warning_group_begin (&self, msg:impl Message) { T::warning_group_begin (self,msg) }
+    fn error_group_begin   (&self, msg:impl Message) { T::error_group_begin   (self,msg) }
+    fn group_end           (&self)                   { T::group_end           (self)     }
+    fn warning_group_end   (&self)                   { T::warning_group_end   (self)     }
+    fn error_group_end     (&self)                   { T::error_group_end     (self)     }
+    fn trace_copies        (&self)                   { T::trace_copies        (self)     }
 }
 
 
@@ -135,6 +152,18 @@ macro_rules! group {
     ($logger:expr, $message:tt, {$($body:tt)*}) => {{
         let __logger = $logger.clone();
         __logger.group_begin(|| iformat!{$message});
+        let out = {$($body)*};
+        __logger.group_end();
+        out
+    }};
+}
+
+/// Evaluates expression and visually groups all logs will occur during its execution.
+#[macro_export]
+macro_rules! warning_group {
+    ($logger:expr, $message:tt, {$($body:tt)*}) => {{
+        let __logger = $logger.clone();
+        __logger.warning_group_begin(|| iformat!{$message});
         let out = {$($body)*};
         __logger.group_end();
         out

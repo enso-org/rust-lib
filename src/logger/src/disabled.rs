@@ -28,8 +28,12 @@ impls!{ From + &From <enabled::Logger> for Logger { |logger| Self::new(logger.pa
 
 impl AnyLogger for Logger {
     type Owned = Self;
-    fn new     (path:impl Into<ImString>) -> Self { Self {enabled : enabled::Logger::new(path) } }
-    fn path    (&self) -> &str { self.enabled.path() }
-    fn warning (&self, msg:impl Message) { self.enabled.warning (msg) }
-    fn error   (&self, msg:impl Message) { self.enabled.error   (msg) }
+    fn new (path:impl Into<ImString>) -> Self { Self {enabled : enabled::Logger::new(path) } }
+    fn path                (&self) -> &str           { self.enabled.path() }
+    fn warning             (&self, msg:impl Message) { self.enabled.warning(msg) }
+    fn error               (&self, msg:impl Message) { self.enabled.error(msg) }
+    fn warning_group_begin (&self, msg:impl Message) { self.enabled.warning_group_begin(msg) }
+    fn error_group_begin   (&self, msg:impl Message) { self.enabled.error_group_begin(msg) }
+    fn warning_group_end   (&self)                   { self.enabled.warning_group_end() }
+    fn error_group_end     (&self)                   { self.enabled.error_group_end() }
 }
