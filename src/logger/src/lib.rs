@@ -15,6 +15,8 @@
 pub mod disabled;
 pub mod enabled;
 
+pub use enabled::AnyLogger;
+
 use enso_prelude::*;
 
 
@@ -62,9 +64,16 @@ pub mod level {
                     }
                 }
             )*
+
+            pub mod from {
+                $(
+                    #[derive(Clone,Copy,Debug,Default,PartialEq,Eq,Hash)]
+                    pub struct $name;
+                )*
+            }
         };
     }
-    define_levels!(Debug,Info,Warning,Error);
+    define_levels!(Trace,Debug,Info,Warning,Error);
 }
 
 
@@ -81,37 +90,7 @@ pub trait Group<Level> {
     fn group_end(&self, level:Level);
 }
 
-/// Interface common to all loggers.
-pub trait AnyLogger {
-    /// Owned type of the logger. This trait is often implemented for a particular logger reference,
-    /// so this is a dependent owned type.
-    type Owned;
 
-    type Level;
-
-    /// Constructor.
-    fn new(id:impl Into<ImString>) -> Self::Owned;
-
-    /// Constructor. Generalized clone.
-    fn new_from(logger:impl AnyLogger) -> Self::Owned {
-        Self::new(logger.path())
-    }
-
-    /// Path that is used as an unique identifier of this logger.
-    fn path(&self) -> &str;
-
-    /// Creates a new logger with this logger as a parent.
-    fn sub(logger:impl AnyLogger, id:impl AsRef<str>) -> Self::Owned {
-        Self::new(iformat!("{logger.path()}.{id.as_ref()}"))
-    }
-}
-
-impl<T:AnyLogger> AnyLogger for &T {
-    type Owned = T::Owned;
-    type Level = T::Level;
-    fn path         (&self) -> &str { T::path(self) }
-    fn new          (path:impl Into<ImString>) -> Self::Owned { T::new(path) }
-}
 
 
 impl<T:Log<Level>,Level> Log<Level> for &T {
@@ -176,6 +155,7 @@ macro_rules! define_log_macros {
 }
 
 define_log_macros!{
+    $ trace   Trace;
     $ debug   Debug;
     $ info    Info;
     $ warning Warning;

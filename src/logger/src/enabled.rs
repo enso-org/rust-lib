@@ -2,7 +2,6 @@
 
 use enso_prelude::*;
 
-use crate::AnyLogger;
 use crate::Message;
 use crate::Log;
 use crate::Group;
@@ -26,8 +25,6 @@ use web_sys::console;
 
 /// Default Logger implementation.
 // #[cfg(target_arch="wasm32")]
-pub type Logger = WasmLogger;
-pub type LoggerOf<Level> = WasmLoggerOf<Level>;
 
 
 
@@ -126,22 +123,34 @@ impl<Level> Event<Level> {
 
 
 
-// ==================
-// === WasmLogger ===
-// ==================
+// ==============
+// === Logger ===
+// ==============
 
-pub type WasmLogger = WasmLoggerOf<Level>;
+pub type TraceLogger   <Level=level::Level> = Logger<level::from::Trace   , Level>;
+pub type DebugLogger   <Level=level::Level> = Logger<level::from::Debug   , Level>;
+pub type InfoLogger    <Level=level::Level> = Logger<level::from::Info    , Level>;
+pub type WarningLogger <Level=level::Level> = Logger<level::from::Warning , Level>;
+pub type ErrorLogger   <Level=level::Level> = Logger<level::from::Error   , Level>;
 
 /// WASM logger implementation.
 #[derive(CloneRef,Debug,Derivative)]
 #[derivative(Clone(bound=""))]
 #[derivative(Default(bound=""))]
-pub struct WasmLoggerOf<Level> {
+pub struct Logger<Filter=level::from::Trace,Level=level::Level> {
     entries : Rc<RefCell<Vec<Event<Level>>>>,
     path    : ImString,
+    filter  : PhantomData<Filter>,
 }
 
-impl<Level> WasmLoggerOf<Level> {
+impl<Filter,Level> Logger<Filter,Level> {
+    pub fn new(path:impl Into<ImString>) -> Self {
+        let path    = path.into();
+        let entries = default();
+        let filter  = default();
+        Self {entries,path,filter}
+    }
+
     fn format(&self, msg:impl Message) -> JsValue {
         iformat!("[{self.path}] {msg.get()}").into()
     }
@@ -160,16 +169,29 @@ impl<Level> WasmLoggerOf<Level> {
     fn format_err(&self, msg:impl Message) -> (JsValue,JsValue,JsValue) {
         self.format_color("orangered",format!("[E] {}",msg.get()))
     }
+
+    pub fn new_from(logger:impl AnyLogger) -> Self {
+        Self::new(logger.path())
+    }
+
+    /// Creates a new logger with this logger as a parent.
+    pub fn sub(logger:impl AnyLogger, id:impl AsRef<str>) -> Self {
+        Self::new(iformat!("{logger.path()}.{id.as_ref()}"))
+    }
 }
 
-impl<Level> AnyLogger for WasmLoggerOf<Level> {
-    type Owned = Self;
-    type Level = Level;
-    fn new(path:impl Into<ImString>) -> Self {
-        let entries = default();
-        let path    = path.into();
-        Self {entries,path}
-    }
+
+/// Interface common to all loggers.
+pub trait AnyLogger {
+    /// Path that is used as an unique identifier of this logger.
+    fn path(&self) -> &str;
+}
+
+impl<T:AnyLogger> AnyLogger for &T {
+    fn path(&self) -> &str { T::path(self) }
+}
+
+impl<Filter,Level> AnyLogger for Logger<Filter,Level> {
     fn path        (&self) -> &str           { &self.path }
     // fn trace       (&self, msg:impl Message) { console::trace_1 (&self.format(msg)) }
     // fn debug       (&self, msg:impl Message) { console::debug_1 (&self.format(msg)) }
@@ -197,13 +219,13 @@ impl<Level> AnyLogger for WasmLoggerOf<Level> {
     // }
 }
 
-impl<L,Level:From<L>> Log<L> for WasmLoggerOf<Level> {
+impl<Level:From<L>,L> Log<L> for Logger<level::from::Trace,Level> {
     fn log(&self, level:L, msg:impl Message) {
         self.entries.borrow_mut().push(Event::entry(level,msg))
     }
 }
 
-impl<L,Level:From<L>> Group<L> for WasmLoggerOf<Level> {
+impl<Level:From<L>,L> Group<L> for Logger<level::from::Trace,Level> {
     fn group_begin(&self, level:L, collapsed:bool, msg:impl Message) {
         self.entries.borrow_mut().push(Event::group_begin(level,msg))
     }
@@ -212,6 +234,52 @@ impl<L,Level:From<L>> Group<L> for WasmLoggerOf<Level> {
         self.entries.borrow_mut().push(Event::group_end())
     }
 }
+
+
+
+
+
+impl<Level:From<level::Warning>> Log<level::Warning> for Logger<level::from::Warning,Level> {
+    fn log(&self, level:level::Warning, msg:impl Message) {
+        self.entries.borrow_mut().push(Event::entry(level,msg))
+    }
+}
+
+impl<Level:From<level::Error>> Log<level::Error> for Logger<level::from::Warning,Level> {
+    fn log(&self, level:level::Error, msg:impl Message) {
+        self.entries.borrow_mut().push(Event::entry(level,msg))
+    }
+}
+
+impl<Level:From<L>,L> Log<L> for Logger<level::from::Warning,Level> {
+    default fn log(&self, _level:L, _msg:impl Message) {}
+}
+
+
+impl<Level:From<level::Warning>> Group<level::Warning> for Logger<level::from::Warning,Level> {
+    fn group_begin(&self, level:level::Warning, collapsed:bool, msg:impl Message) {
+        self.entries.borrow_mut().push(Event::group_begin(level,msg))
+    }
+    fn group_end(&self, level:level::Warning) {
+        self.entries.borrow_mut().push(Event::group_end())
+    }
+}
+
+impl<Level:From<level::Error>> Group<level::Error> for Logger<level::from::Warning,Level> {
+    fn group_begin(&self, level:level::Error, collapsed:bool, msg:impl Message) {
+        self.entries.borrow_mut().push(Event::group_begin(level,msg))
+    }
+    fn group_end(&self, level:level::Error) {
+        self.entries.borrow_mut().push(Event::group_end())
+    }
+}
+
+impl<L,Level:From<L>> Group<L> for Logger<level::from::Warning,Level> {
+    default fn group_begin(&self, _level:L, _collapsed:bool, _msg:impl Message) {}
+    default fn group_end(&self, _level:L) {}
+}
+
+
 
 
 // ===================
