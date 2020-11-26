@@ -5,6 +5,11 @@ use enso_prelude::*;
 use crate::Message;
 use crate::AnyLogger;
 use crate::enabled;
+use crate::enabled::Event;
+use crate::level;
+use crate::level::Level;
+use crate::Log;
+use crate::Group;
 
 use enso_shapely::CloneRef;
 use std::fmt::Debug;
@@ -15,10 +20,14 @@ use std::fmt::Debug;
 // === Logger ===
 // ==============
 
+pub type Logger = LoggerOf<Level>;
+
 /// Trivial logger that discards all messages except warnings and errors.
-#[derive(Clone,CloneRef,Debug,Default)]
-pub struct Logger {
-    enabled : enabled::Logger,
+#[derive(CloneRef,Debug,Derivative)]
+#[derivative(Clone(bound=""))]
+#[derivative(Default(bound=""))]
+pub struct LoggerOf<Level> {
+    enabled : enabled::LoggerOf<Level>,
 }
 
 
@@ -26,14 +35,43 @@ pub struct Logger {
 
 impls!{ From + &From <enabled::Logger> for Logger { |logger| Self::new(logger.path()) }}
 
-impl AnyLogger for Logger {
+impl<Level> AnyLogger for LoggerOf<Level> {
     type Owned = Self;
-    fn new (path:impl Into<ImString>) -> Self { Self {enabled : enabled::Logger::new(path) } }
+    type Level = Level;
+    fn new (path:impl Into<ImString>) -> Self { Self {enabled : enabled::LoggerOf::new(path) } }
     fn path                (&self) -> &str           { self.enabled.path() }
-    fn warning             (&self, msg:impl Message) { self.enabled.warning(msg) }
-    fn error               (&self, msg:impl Message) { self.enabled.error(msg) }
-    fn warning_group_begin (&self, msg:impl Message) { self.enabled.warning_group_begin(msg) }
-    fn error_group_begin   (&self, msg:impl Message) { self.enabled.error_group_begin(msg) }
-    fn warning_group_end   (&self)                   { self.enabled.warning_group_end() }
-    fn error_group_end     (&self)                   { self.enabled.error_group_end() }
+}
+
+
+impl<Level:From<level::Warning>> Log<level::Warning> for LoggerOf<Level> {
+    fn log(&self, level:level::Warning, msg:impl Message) {
+        self.enabled.log(level,msg)
+    }
+}
+
+impl<Level:From<level::Error>> Log<level::Error> for LoggerOf<Level> {
+    fn log(&self, level:level::Error, msg:impl Message) {
+        self.enabled.log(level,msg)
+    }
+}
+
+impl<L,Level:From<L>> Log<L> for LoggerOf<Level> {
+    default fn log(&self, _level:L, _msg:impl Message) {}
+}
+
+
+
+impl<Level:From<level::Warning>> Group<level::Warning> for LoggerOf<Level> {
+    fn group_begin(&self, level:level::Warning, collapsed:bool, msg:impl Message) {
+        self.enabled.group_begin(level,collapsed,msg)
+    }
+    fn group_end(&self, level:level::Warning) {
+        self.enabled.group_end(level)
+    }
+}
+
+
+impl<L,Level:From<L>> Group<L> for LoggerOf<Level> {
+    default fn group_begin(&self, _level:L, _collapsed:bool, _msg:impl Message) {}
+    default fn group_end(&self, _level:L) {}
 }
