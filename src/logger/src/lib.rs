@@ -96,11 +96,12 @@ pub trait AnyLogger {
     /// Visually groups all logs between group_begin and group_end.
     fn group_begin(&self, _msg:impl Message) {}
 
-    /// Visually groups all logs between group_begin and group_end. Log with warning level
-    /// verbosity.
+    /// Visually groups all logs between group_begin and group_end. The group header will be logged
+    /// with the warning verbosity level.
     fn warning_group_begin(&self, _msg:impl Message) {}
 
-    /// Visually groups all logs between group_begin and group_end. Log with error level verbosity.
+    /// Visually groups all logs between group_begin and group_end. The group header will be logged
+    /// with the error verbosity level.
     fn error_group_begin(&self, _msg:impl Message) {}
 
     /// Visually groups all logs between group_begin and group_end.
@@ -165,7 +166,19 @@ macro_rules! warning_group {
         let __logger = $logger.clone();
         __logger.warning_group_begin(|| iformat!{$message});
         let out = {$($body)*};
-        __logger.group_end();
+        __logger.warning_group_end();
+        out
+    }};
+}
+
+/// Evaluates expression and visually groups all logs will occur during its execution.
+#[macro_export]
+macro_rules! error_group {
+    ($logger:expr, $message:tt, {$($body:tt)*}) => {{
+        let __logger = $logger.clone();
+        __logger.error_group_begin(|| iformat!{$message});
+        let out = {$($body)*};
+        __logger.error_group_end();
         out
     }};
 }
