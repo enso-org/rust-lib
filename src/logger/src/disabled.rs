@@ -8,8 +8,6 @@ use crate::enabled;
 use crate::enabled::Event;
 use crate::level;
 use crate::level::Level;
-use crate::Log;
-use crate::Group;
 
 use enso_shapely::CloneRef;
 use std::fmt::Debug;

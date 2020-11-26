@@ -3,8 +3,7 @@
 use enso_prelude::*;
 
 use crate::Message;
-use crate::Log;
-use crate::Group;
+use crate::LoggerOps;
 use crate::level;
 use crate::level::Level;
 
@@ -219,13 +218,11 @@ impl<Filter,Level> AnyLogger for Logger<Filter,Level> {
     // }
 }
 
-impl<Level:From<L>,L> Log<L> for Logger<level::from::Trace,Level> {
+impl<Level:From<L>,L> LoggerOps<L> for Logger<level::from::Trace,Level> {
     fn log(&self, level:L, msg:impl Message) {
         self.entries.borrow_mut().push(Event::entry(level,msg))
     }
-}
 
-impl<Level:From<L>,L> Group<L> for Logger<level::from::Trace,Level> {
     fn group_begin(&self, level:L, collapsed:bool, msg:impl Message) {
         self.entries.borrow_mut().push(Event::group_begin(level,msg))
     }
@@ -239,44 +236,38 @@ impl<Level:From<L>,L> Group<L> for Logger<level::from::Trace,Level> {
 
 
 
-impl<Level:From<level::Warning>> Log<level::Warning> for Logger<level::from::Warning,Level> {
+impl<Level:From<level::Warning>> LoggerOps<level::Warning> for Logger<level::from::Warning,Level> {
     fn log(&self, level:level::Warning, msg:impl Message) {
         self.entries.borrow_mut().push(Event::entry(level,msg))
     }
-}
 
-impl<Level:From<level::Error>> Log<level::Error> for Logger<level::from::Warning,Level> {
-    fn log(&self, level:level::Error, msg:impl Message) {
-        self.entries.borrow_mut().push(Event::entry(level,msg))
-    }
-}
-
-impl<Level:From<L>,L> Log<L> for Logger<level::from::Warning,Level> {
-    default fn log(&self, _level:L, _msg:impl Message) {}
-}
-
-
-impl<Level:From<level::Warning>> Group<level::Warning> for Logger<level::from::Warning,Level> {
     fn group_begin(&self, level:level::Warning, collapsed:bool, msg:impl Message) {
         self.entries.borrow_mut().push(Event::group_begin(level,msg))
     }
+
     fn group_end(&self, level:level::Warning) {
         self.entries.borrow_mut().push(Event::group_end())
     }
 }
 
-impl<Level:From<level::Error>> Group<level::Error> for Logger<level::from::Warning,Level> {
+impl<Level:From<level::Error>> LoggerOps<level::Error> for Logger<level::from::Warning,Level> {
+    fn log(&self, level:level::Error, msg:impl Message) {
+        self.entries.borrow_mut().push(Event::entry(level,msg))
+    }
+
     fn group_begin(&self, level:level::Error, collapsed:bool, msg:impl Message) {
         self.entries.borrow_mut().push(Event::group_begin(level,msg))
     }
+
     fn group_end(&self, level:level::Error) {
         self.entries.borrow_mut().push(Event::group_end())
     }
 }
 
-impl<L,Level:From<L>> Group<L> for Logger<level::from::Warning,Level> {
-    default fn group_begin(&self, _level:L, _collapsed:bool, _msg:impl Message) {}
-    default fn group_end(&self, _level:L) {}
+impl<Level:From<L>,L> LoggerOps<L> for Logger<level::from::Warning,Level> {
+    default fn log         (&self, _level:L, _msg:impl Message) {}
+    default fn group_begin (&self, _level:L, _collapsed:bool, _msg:impl Message) {}
+    default fn group_end   (&self, _level:L) {}
 }
 
 
