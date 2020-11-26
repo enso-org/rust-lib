@@ -132,6 +132,12 @@ pub type InfoLogger    <Level=level::Level> = Logger<level::from::Info    , Leve
 pub type WarningLogger <Level=level::Level> = Logger<level::from::Warning , Level>;
 pub type ErrorLogger   <Level=level::Level> = Logger<level::from::Error   , Level>;
 
+pub type DefaultTraceLogger   = TraceLogger;
+pub type DefaultDebugLogger   = DebugLogger;
+pub type DefaultInfoLogger    = InfoLogger;
+pub type DefaultWarningLogger = WarningLogger;
+pub type DefaultErrorLogger   = ErrorLogger;
+
 /// WASM logger implementation.
 #[derive(CloneRef,Debug,Derivative)]
 #[derivative(Clone(bound=""))]
@@ -277,4 +283,4 @@ impl<Level:From<L>,L> LoggerOps<L> for Logger<level::from::Warning,Level> {
 // === Conversions ===
 // ===================
 
-impls!{ From + &From <crate::disabled::Logger> for Logger { |logger| Self::new(logger.path()) }}
+// impls!{ From + &From <crate::disabled::Logger> for Logger { |logger| Self::new(logger.path()) }}

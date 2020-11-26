@@ -3,9 +3,9 @@
 use enso_prelude::*;
 
 use crate::Message;
-use crate::enabled::AnyLogger;
-use crate::enabled;
-use crate::enabled::Event;
+use crate::logger::AnyLogger;
+use crate::logger;
+use crate::logger::Event;
 use crate::level;
 use crate::level::Level;
 
@@ -18,4 +18,4 @@ use std::fmt::Debug;
 // === Logger ===
 // ==============
 
-pub type Logger = enabled::Logger<level::from::Warning,Level>;
+pub type Logger = logger::Logger<level::from::Warning,Level>;

@@ -1045,8 +1045,8 @@ pub mod prelude {
     /// The Enso logging library.
     pub mod logger {
         pub use enso_logger::*;
-        pub use enso_logger::disabled::Logger as Disabled;
-        pub use enso_logger::enabled::Logger as Enabled;
+        pub use enso_logger::WarningLogger as Logger as Disabled;
+        pub use enso_logger::logger::Logger as Enabled;
     }
 }
 
