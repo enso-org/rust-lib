@@ -135,10 +135,52 @@ impl<Level> Event<Level> {
     }
 }
 
-#[derive(Debug,Default)]
-pub struct DefaultSink;
 
-impl DefaultSink {
+pub trait HasOutput {
+    type Output;
+}
+
+pub trait Formatter<Level> : HasOutput {
+    fn format(path:&str, message:String) -> Self::Output;
+}
+
+
+
+#[derive(Debug,Default)]
+pub struct DefaultFormatter;
+
+impl DefaultFormatter {
+    fn format_color(path:&str, color:&str, msg:String) -> js_sys::Array {
+        let msg  = format!("%c {} %c {}",path,msg).into();
+        let css1 = "background:dimgray;border-radius:4px".into();
+        let css2 = format!("color:{}",color).into();
+        let arr  = js_sys::Array::new();
+        arr.push(&msg);
+        arr.push(&css1);
+        arr.push(&css2);
+        arr
+    }
+}
+
+
+impl HasOutput for DefaultFormatter {
+    type Output = js_sys::Array;
+}
+
+impl Formatter<level::Warning> for DefaultFormatter {
+    fn format(path:&str, message:String) -> Self::Output {
+        Self::format_color(path,"orange",format!("[W] {}",message.get()))
+    }
+}
+
+
+#[derive(Debug,Derivative)]
+#[derivative(Default(bound=""))]
+pub struct Pipe<Fmt=DefaultFormatter> {
+    fmt : PhantomData<Fmt>
+}
+
+impl<Fmt> Pipe<Fmt> {
     fn format_color(&self, path:&str, color:&str, msg:String) -> (JsValue,JsValue,JsValue) {
         let msg  = format!("%c {} %c {}",path,msg).into();
         let css1 = "background:dimgray;border-radius:4px".into();
@@ -155,17 +197,23 @@ pub trait Sink<Level> : Default {
     fn submit(&mut self, path:&str, event:Event<Level>);
 }
 
-// impl<Level> Sink<Level> for DefaultSink {
+pub trait XSink<Level> : Default {
+    fn submit(&mut self, path:&str, event:Event<Level>);
+}
+
+// impl<Level> Sink<Level> for Pipe {
 //     default fn submit(&self, path:&str, event:Event<Level>) {}
 // }Trace,Debug,Info,Warning,Error
 
-impl Sink<level::Levels> for DefaultSink {
-    default fn submit(&mut self, path:&str, event:Event<level::Levels>) {
+// FIXME: Hardcoded outputs to be js_sys::Array!!!
+impl<Fmt> Sink<level::Levels> for Pipe<Fmt>
+where Fmt : Formatter<level::Warning,Output=js_sys::Array> {
+    fn submit(&mut self, path:&str, event:Event<level::Levels>) {
         match event.level {
             // level::Levels::Trace   => self.submit(path,event.casted(level::Trace)),
             // level::Levels::Debug   => self.submit(path,event.casted(level::Debug)),
             // level::Levels::Info    => self.submit(path,event.casted(level::Info)),
-            level::Levels::Warning => self.submit(path,event.casted(level::Warning)),
+            level::Levels::Warning => XSink::<level::Warning>::submit(self,path,event.casted(level::Warning)),
             // level::Levels::Error   => self.submit(path,event.casted(level::Error)),
             _ => {} // FIXME
         }
@@ -173,16 +221,19 @@ impl Sink<level::Levels> for DefaultSink {
 }
 
 
-impl Sink<level::Warning> for DefaultSink {
-    default fn submit(&mut self, path:&str, event:Event<level::Warning>) {
+// pub trait Formatter<Level> : HasOutput {
+//     fn format(path:&str, message:String) -> Self::Output;
+// }
+
+impl<Fmt,Level> XSink<Level> for Pipe<Fmt>
+where Fmt:Formatter<Level,Output=js_sys::Array> {
+    default fn submit(&mut self, path:&str, event:Event<Level>) {
         match event.tp {
             EventType::Entry(entry) => {
-                let args = self.format_warn(path,entry.message);
-                console::log_3 (&args.0,&args.1,&args.2)
+                console::log(&<Fmt>::format(path,entry.message));
             },
             EventType::GroupBegin(entry) => {
-                let args = self.format_warn(path,entry.message);
-                console::group_collapsed_3 (&args.0,&args.1,&args.2)
+                console::group_collapsed(&<Fmt>::format(path,entry.message));
             },
             EventType::GroupEnd => {
                 console::group_end()
@@ -199,9 +250,10 @@ impl Sink<level::Warning> for DefaultSink {
 
 #[derive(CloneRef,Debug,Derivative)]
 #[derivative(Clone(bound=""))]
-pub struct Logger<Filter=level::from::Trace, Sink=DefaultSink, Level=Levels> {
+pub struct Logger<Filter=level::from::Trace, Sink=Pipe, Level=Levels> {
     path   : ImString,
     filter : PhantomData<Filter>,
+    levels : PhantomData<Level>,
     sink   : Rc<RefCell<Sink>>,
 }
 
@@ -210,8 +262,9 @@ where S:Sink<Level> {
     pub fn new(path:impl Into<ImString>) -> Self {
         let path   = path.into();
         let filter = default();
+        let levels = default();
         let sink   = default();
-        Self {path,filter,sink}
+        Self {path,filter,levels,sink}
     }
 
     fn format(&self, msg:impl Message) -> JsValue {
@@ -307,7 +360,7 @@ impl<Filter,Sink,Level> AnyLogger for Logger<Filter,Sink,Level> {
 macro_rules! define_logger_aliases {
     ($($tp:ident $name:ident $default_name:ident;)*) => {$(
         /// A logger which compile-time filters out all messages with log levels smaller than $tp.
-        pub type $name <S=DefaultSink,L=Levels> = Logger<level::from::$tp,S,L>;
+        pub type $name <S=Pipe,L=Levels> = Logger<level::from::$tp,S,L>;
 
         /// The same as $name, but with all type arguments applied, for convenient usage.
         pub type $default_name = $name;
