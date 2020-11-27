@@ -6,6 +6,7 @@
 // === Macros ===
 // ==============
 
+/// Internal utility for logging macros.
 #[macro_export]
 macro_rules! log_template {
     ($level:path, $logger:expr, $msg:ident) => {
@@ -34,8 +35,10 @@ macro_rules! log_template {
 
 // === Macro Generation ===
 
+/// Internal utility for logging macros. Generates all the logging macros.
 macro_rules! define_log_macros {
     ($($d:tt $name:ident $tp_name:ident;)*) => {$(
+        /// $tp_name logging macro.
         #[macro_export]
         macro_rules! $name {
             ($d($d ts:tt)*) => {

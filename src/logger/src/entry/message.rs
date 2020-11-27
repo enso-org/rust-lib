@@ -8,6 +8,7 @@
 
 /// Message that can be logged. This trait allow a wide range of input arguments and also, allows
 /// the messages to be constructed lazily, from functions.
+#[allow(missing_docs)]
 pub trait Message              { fn get(self) -> String; }
 impl      Message for &str     { fn get(self) -> String { self.into() } }
 impl      Message for &&str    { fn get(self) -> String { (*self).into() } }

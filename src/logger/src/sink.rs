@@ -1,13 +1,28 @@
+//! Logger sink implementation.
+
 pub mod consumer;
 pub mod formatter;
 
 use crate::prelude::*;
-use crate::entry::message::Message;
 use crate::entry::Entry;
 
-use wasm_bindgen::JsValue;
 
 
+// ===================
+// === DefaultSink ===
+// ===================
+
+/// Default sink implementation.
+pub type DefaultSink = Sink;
+
+
+
+// ============
+// === Sink ===
+// ============
+
+/// A sink is a combination of a formatter and consumer. The messages that enter the sink are first
+/// formatted and then passed to the consumer.
 #[derive(Debug,Derivative)]
 #[derivative(Default(bound="Consumer:Default"))]
 #[allow(missing_docs)]
@@ -16,19 +31,9 @@ pub struct Sink<Consumer=consumer::Default,Formatter=formatter::Default> {
     pub consumer  : Consumer,
 }
 
-impl<Fmt> Sink<Fmt> {
-    fn format_color(&self, path:&str, color:&str, msg:String) -> (JsValue,JsValue,JsValue) {
-        let msg  = format!("%c {} %c {}",path,msg).into();
-        let css1 = "background:dimgray;border-radius:4px".into();
-        let css2 = format!("color:{}",color).into();
-        (msg,css1,css2)
-    }
-
-    fn format_warn(&self, path:&str, msg:impl Message) -> (JsValue,JsValue,JsValue) {
-        self.format_color(path,"orange",format!("[W] {}",msg.get()))
-    }
-}
-
-pub trait LevelGroupSink<Level> {
-    fn submit(&mut self, path:&str, event:Entry<Level>);
+/// Trait allowing submitting entries to the sink for a particular verbosity lever group definition.
+/// This trait is implemented automatically by the `define_levels_group` macro.
+#[allow(missing_docs)]
+pub trait LevelSink<Level> {
+    fn submit(&mut self, path:&str, entry:Entry<Level>);
 }

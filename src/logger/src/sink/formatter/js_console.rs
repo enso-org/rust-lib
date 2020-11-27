@@ -1,7 +1,9 @@
+//! JavaScript console formatter implementation.
+
 use crate::entry::level;
+use crate::entry;
 use crate::sink::formatter::Formatter;
 use crate::sink::formatter::FormatterOutput;
-use crate::entry::EntryContent;
 
 
 
@@ -9,8 +11,8 @@ use crate::entry::EntryContent;
 // === JsConsole ===
 // =================
 
-/// A nicely looking, colorful, basic formatter for JavaScript Console.
-#[derive(Debug,Default)]
+/// A nicely looking, colorful, basic formatter for a JavaScript console.
+#[derive(Clone,Copy,Debug,Default)]
 pub struct JsConsole;
 
 impl FormatterOutput for JsConsole {
@@ -33,14 +35,20 @@ impl JsConsole {
 
 // === Impls ===
 
+impl<Level> Formatter<Level> for JsConsole {
+    default fn format(path:&str, entry:&entry::Content) -> Option<Self::Output> {
+        entry.message().map(|msg| Self::format_color(path, "red", msg.to_owned()))
+    }
+}
+
 impl Formatter<level::Debug> for JsConsole {
-    fn format(path:&str, event:&EntryContent) -> Option<Self::Output> {
-        event.entry().map(|msg| Self::format_color(path, "red", msg.to_owned()))
+    fn format(path:&str, entry:&entry::Content) -> Option<Self::Output> {
+        entry.message().map(|msg| Self::format_color(path, "red", msg.to_owned()))
     }
 }
 
 impl Formatter<level::Warning> for JsConsole {
-    fn format(path:&str, event:&EntryContent) -> Option<Self::Output> {
-        event.entry().map(|mmsg| Self::format_color(path, "orange", format!("[W] {}",mmsg)))
+    fn format(path:&str, entry:&entry::Content) -> Option<Self::Output> {
+        entry.message().map(|mmsg| Self::format_color(path, "orange", format!("[W] {}",mmsg)))
     }
 }
