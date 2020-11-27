@@ -2,7 +2,7 @@ use web_sys::console;
 
 use crate::entry::Entry;
 use crate::entry::EntryContent;
-use crate::consumer::Consumer;
+use crate::sink::consumer::Consumer;
 
 
 

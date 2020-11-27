@@ -13,15 +13,12 @@
 #![feature(specialization)]
 
 
+pub use enso_prelude as prelude;
 
-pub mod level;
 pub mod logger;
 pub mod macros;
-pub mod message;
 pub mod entry;
-pub mod consumer;
-pub mod formatter;
-pub mod ops;
+pub mod sink;
 
 pub use logger::Logger;
 pub use logger::AnyLogger;
@@ -35,6 +32,6 @@ pub use logger::DefaultDebugLogger;
 pub use logger::DefaultInfoLogger;
 pub use logger::DefaultWarningLogger;
 pub use logger::DefaultErrorLogger;
+pub use logger::LoggerOps;
 
-pub use message::Message;
-pub use ops::LoggerOps;
+pub use entry::message::Message;

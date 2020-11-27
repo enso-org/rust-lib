@@ -39,7 +39,7 @@ macro_rules! define_log_macros {
         #[macro_export]
         macro_rules! $name {
             ($d($d ts:tt)*) => {
-                $crate::log_template!{$crate::level::$tp_name,$d($d ts)*}
+                $crate::log_template!{$crate::entry::level::$tp_name,$d($d ts)*}
             };
         }
     )*};

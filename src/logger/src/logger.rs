@@ -1,11 +1,11 @@
 //! Contains implementation of default logger.
 
-use enso_prelude::*;
+
+use crate::prelude::*;
 
 use crate::Message;
-use crate::LoggerOps;
-use crate::level;
-use crate::level::DefaultLevels;
+use crate::entry::level;
+use crate::entry::level::DefaultLevels;
 
 use enso_shapely::CloneRef;
 use std::fmt::Debug;
@@ -15,47 +15,16 @@ use web_sys::console;
 use crate::entry::Entry;
 use crate::entry::EntryContent;
 
-use crate::formatter;
-use crate::formatter::Formatter;
-use crate::formatter::FormatterOutput;
-use crate::consumer;
-use crate::consumer::Consumer;
+use crate::sink::formatter;
+use crate::sink::formatter::Formatter;
+use crate::sink::formatter::FormatterOutput;
+use crate::sink::consumer;
+use crate::sink::consumer::Consumer;
+use crate::sink::LevelGroupSink;
+use crate::sink::Sink;
 
 
 
-
-
-#[derive(Debug,Derivative)]
-#[derivative(Default(bound="Consumer:Default"))]
-pub struct Sink<Consumer=consumer::Default,Formatter=formatter::Default> {
-    formatter : PhantomData<Formatter>,
-    consumer  : Consumer,
-}
-
-impl<Fmt> Sink<Fmt> {
-    fn format_color(&self, path:&str, color:&str, msg:String) -> (JsValue,JsValue,JsValue) {
-        let msg  = format!("%c {} %c {}",path,msg).into();
-        let css1 = "background:dimgray;border-radius:4px".into();
-        let css2 = format!("color:{}",color).into();
-        (msg,css1,css2)
-    }
-
-    fn format_warn(&self, path:&str, msg:impl Message) -> (JsValue,JsValue,JsValue) {
-        self.format_color(path,"orange",format!("[W] {}",msg.get()))
-    }
-}
-
-pub trait LevelGroupSink<Level> {
-    fn submit(&mut self, path:&str, event:Entry<Level>);
-}
-
-pub trait LevelSink<Level> {
-    fn submit(&mut self, path:&str, event:Entry<Level>);
-}
-
-// impl<Level> Sink<Level> for Sink {
-//     default fn submit(&self, path:&str, event:Entry<Level>) {}
-// }Trace,Debug,Info,Warning,Error
 
 impl<S,Fmt> LevelGroupSink<level::DefaultLevels> for Sink<S,Fmt>
 where S:Consumer<level::DefaultLevels,Fmt::Output>,
@@ -64,12 +33,6 @@ where S:Consumer<level::DefaultLevels,Fmt::Output>,
 {
     fn submit(&mut self, path:&str, event:Entry<level::DefaultLevels>) {
         match event.level {
-            // level::DefaultLevels::Trace   => self.submit(path,event.casted(level::Trace)),
-            // level::DefaultLevels::Debug   => {
-            //     let msg = <Fmt>::format(path,&event.content);
-            //     self.consumer.consume(event,msg);
-            // },
-            // level::DefaultLevels::Info    => self.submit(path,event.casted(level::Info)),
             level::DefaultLevels::Debug => {
                 let msg = formatter::format::<Fmt,level::Debug>(path,&event.content);
                 self.consumer.consume(event,msg);
@@ -78,37 +41,11 @@ where S:Consumer<level::DefaultLevels,Fmt::Output>,
                 let msg = formatter::format::<Fmt,level::Warning>(path,&event.content);
                 self.consumer.consume(event,msg);
             },
-            // level::DefaultLevels::Error   => self.submit(path,event.casted(level::Error)),
             _ => {} // FIXME
         }
     }
 }
 
-
-// pub trait Formatter<Level> : FormatterOutput {
-//     fn format(path:&str, message:String) -> Self::Output;
-// }
-
-impl<S,Fmt,Level> LevelSink<Level> for Sink<S,Fmt>
-where Fmt:Formatter<Level,Output=js_sys::Array> {
-    default fn submit(&mut self, path:&str, event:Entry<Level>) {
-        match event.content {
-            EntryContent::Message(_) => {
-                if let Some(msg) = <Fmt>::format(path,&event.content) {
-                    console::log(&msg);
-                }
-            },
-            EntryContent::GroupBegin(_) => {
-                if let Some(msg) = <Fmt>::format(path,&event.content) {
-                    console::group_collapsed(&msg);
-                }
-            },
-            EntryContent::GroupEnd => {
-                console::group_end()
-            }
-        }
-    }
-}
 
 
 
@@ -211,9 +148,38 @@ define_logger_aliases! {
 
 
 
-// ===============================
-// === Ops to Sink Redirection ===
-// ===============================
+// =================
+// === LoggerOps ===
+// =================
+
+/// Primitive operations on a logger. The type parameter allows for compile-time log level filtering
+/// of the messages.
+#[allow(missing_docs)]
+pub trait LoggerOps<Level> {
+    fn log         (&self, level:Level, msg:impl Message);
+    fn group_begin (&self, level:Level, collapsed:bool, msg:impl Message);
+    fn group_end   (&self, level:Level);
+}
+
+
+// === Impl for References ===
+
+impl<T:LoggerOps<Level>,Level> LoggerOps<Level> for &T {
+    fn log(&self, level:Level, msg:impl Message) {
+        LoggerOps::log(*self,level,msg)
+    }
+
+    fn group_begin(&self, level:Level, collapsed:bool, msg:impl Message) {
+        LoggerOps::group_begin(*self,level,collapsed,msg)
+    }
+
+    fn group_end(&self, level:Level) {
+        LoggerOps::group_end(*self,level)
+    }
+}
+
+
+// === Generic Redirection ===
 
 impl<S,Filter,Level,L> LoggerOps<L> for Logger<Filter,S,Level>
 where S:LevelGroupSink<Level>, Level:From<L> {

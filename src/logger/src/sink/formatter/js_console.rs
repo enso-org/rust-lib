@@ -1,6 +1,6 @@
-use crate::level;
-use crate::formatter::Formatter;
-use crate::formatter::FormatterOutput;
+use crate::entry::level;
+use crate::sink::formatter::Formatter;
+use crate::sink::formatter::FormatterOutput;
 use crate::entry::EntryContent;
 
 
