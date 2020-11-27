@@ -18,6 +18,9 @@ pub mod level;
 pub mod logger;
 pub mod macros;
 pub mod message;
+pub mod entry;
+pub mod consumer;
+pub mod formatter;
 pub mod ops;
 
 pub use logger::Logger;
