@@ -120,17 +120,71 @@ impl<Level> Event<Level> {
     }
 }
 
+#[derive(Debug,Default)]
+pub struct DefaultSink;
+
+impl DefaultSink {
+    fn format_color(&self, path:&str, color:&str, msg:String) -> (JsValue,JsValue,JsValue) {
+        let msg  = format!("%c {} %c {}",path,msg).into();
+        let css1 = "background:dimgray;border-radius:4px".into();
+        let css2 = format!("color:{}",color).into();
+        (msg,css1,css2)
+    }
+
+    fn format_warn(&self, path:&str, msg:impl Message) -> (JsValue,JsValue,JsValue) {
+        self.format_color(path,"orange",format!("[W] {}",msg.get()))
+    }
+}
+
+pub trait Sink<Level> : Default {
+    fn submit(&self, path:&str, event:Event<Level>);
+}
+
+// impl<Level> Sink<Level> for DefaultSink {
+//     default fn submit(&self, path:&str, event:Event<Level>) {}
+// }
+
+impl Sink<level::Level> for DefaultSink {
+    default fn submit(&self, path:&str, event:Event<level::Level>) {
+        match event {
+            Event::Entry(entry) => {
+                match entry.level {
+                    level::Level::Warning => {
+                        let event : Event<level::Warning> = Event::entry(level::Warning,entry.message);
+                        self.submit(path,event)
+                    },
+                    _ => {}
+                }
+            },
+            _ => {}
+        }
+    }
+}
+
+
+impl Sink<level::Warning> for DefaultSink {
+    default fn submit(&self, path:&str, event:Event<level::Warning>) {
+        match event {
+            Event::Entry(entry) => {
+                let args = self.format_warn(path,entry.message);
+                console::log_3 (&args.0,&args.1,&args.2)
+            },
+            _ => {}
+        }
+    }
+}
+
 
 
 // ==============
 // === Logger ===
 // ==============
 
-pub type TraceLogger   <Level=level::Level> = Logger<level::from::Trace   , Level>;
-pub type DebugLogger   <Level=level::Level> = Logger<level::from::Debug   , Level>;
-pub type InfoLogger    <Level=level::Level> = Logger<level::from::Info    , Level>;
-pub type WarningLogger <Level=level::Level> = Logger<level::from::Warning , Level>;
-pub type ErrorLogger   <Level=level::Level> = Logger<level::from::Error   , Level>;
+pub type TraceLogger   <Sink=DefaultSink,Level=level::Level> = Logger<level::from::Trace   , Sink,Level>;
+pub type DebugLogger   <Sink=DefaultSink,Level=level::Level> = Logger<level::from::Debug   , Sink,Level>;
+pub type InfoLogger    <Sink=DefaultSink,Level=level::Level> = Logger<level::from::Info    , Sink,Level>;
+pub type WarningLogger <Sink=DefaultSink,Level=level::Level> = Logger<level::from::Warning , Sink,Level>;
+pub type ErrorLogger   <Sink=DefaultSink,Level=level::Level> = Logger<level::from::Error   , Sink,Level>;
 
 pub type DefaultTraceLogger   = TraceLogger;
 pub type DefaultDebugLogger   = DebugLogger;
@@ -141,19 +195,21 @@ pub type DefaultErrorLogger   = ErrorLogger;
 /// WASM logger implementation.
 #[derive(CloneRef,Debug,Derivative)]
 #[derivative(Clone(bound=""))]
-#[derivative(Default(bound=""))]
-pub struct Logger<Filter=level::from::Trace,Level=level::Level> {
+pub struct Logger<Filter=level::from::Trace, Sink=DefaultSink, Level=level::Level> {
     entries : Rc<RefCell<Vec<Event<Level>>>>,
     path    : ImString,
     filter  : PhantomData<Filter>,
+    sink    : Rc<RefCell<Sink>>,
 }
 
-impl<Filter,Level> Logger<Filter,Level> {
+impl<Filter,S,Level> Logger<Filter,S,Level>
+where S:Sink<Level> {
     pub fn new(path:impl Into<ImString>) -> Self {
         let path    = path.into();
         let entries = default();
         let filter  = default();
-        Self {entries,path,filter}
+        let sink    = default();
+        Self {entries,path,filter,sink}
     }
 
     fn format(&self, msg:impl Message) -> JsValue {
@@ -196,7 +252,7 @@ impl<T:AnyLogger> AnyLogger for &T {
     fn path(&self) -> &str { T::path(self) }
 }
 
-impl<Filter,Level> AnyLogger for Logger<Filter,Level> {
+impl<Filter,Sink,Level> AnyLogger for Logger<Filter,Sink,Level> {
     fn path        (&self) -> &str           { &self.path }
     // fn trace       (&self, msg:impl Message) { console::trace_1 (&self.format(msg)) }
     // fn debug       (&self, msg:impl Message) { console::debug_1 (&self.format(msg)) }
@@ -224,9 +280,12 @@ impl<Filter,Level> AnyLogger for Logger<Filter,Level> {
     // }
 }
 
-impl<Level:From<L>,L> LoggerOps<L> for Logger<level::from::Trace,Level> {
+impl<S,Level:From<L>,L> LoggerOps<L> for Logger<level::from::Trace,S,Level>
+where S:Sink<Level> {
     fn log(&self, level:L, msg:impl Message) {
-        self.entries.borrow_mut().push(Event::entry(level,msg))
+        println!("log0");
+        // self.entries.borrow_mut().push(Event::entry(level,msg))
+        self.sink.borrow().submit(&self.path,Event::entry(level,msg))
     }
 
     fn group_begin(&self, level:L, collapsed:bool, msg:impl Message) {
@@ -242,9 +301,12 @@ impl<Level:From<L>,L> LoggerOps<L> for Logger<level::from::Trace,Level> {
 
 
 
-impl<Level:From<level::Warning>> LoggerOps<level::Warning> for Logger<level::from::Warning,Level> {
+impl<S,Level> LoggerOps<level::Warning> for Logger<level::from::Warning,S,Level>
+where S:Sink<Level>, Level:From<level::Warning> {
     fn log(&self, level:level::Warning, msg:impl Message) {
-        self.entries.borrow_mut().push(Event::entry(level,msg))
+        println!("log1");
+        // self.entries.borrow_mut().push(Event::entry(level,msg))
+        self.sink.borrow().submit(&self.path,Event::entry(level,msg))
     }
 
     fn group_begin(&self, level:level::Warning, collapsed:bool, msg:impl Message) {
@@ -256,9 +318,12 @@ impl<Level:From<level::Warning>> LoggerOps<level::Warning> for Logger<level::fro
     }
 }
 
-impl<Level:From<level::Error>> LoggerOps<level::Error> for Logger<level::from::Warning,Level> {
+impl<S,Level> LoggerOps<level::Error> for Logger<level::from::Warning,S,Level>
+where S:Sink<Level>, Level:From<level::Error> {
     fn log(&self, level:level::Error, msg:impl Message) {
-        self.entries.borrow_mut().push(Event::entry(level,msg))
+        println!("log2");
+        // self.entries.borrow_mut().push(Event::entry(level,msg))
+        self.sink.borrow().submit(&self.path,Event::entry(level,msg))
     }
 
     fn group_begin(&self, level:level::Error, collapsed:bool, msg:impl Message) {
@@ -270,7 +335,8 @@ impl<Level:From<level::Error>> LoggerOps<level::Error> for Logger<level::from::W
     }
 }
 
-impl<Level:From<L>,L> LoggerOps<L> for Logger<level::from::Warning,Level> {
+impl<Sink,Level,L> LoggerOps<L> for Logger<level::from::Warning,Sink,Level>
+where Level:From<L> {
     default fn log         (&self, _level:L, _msg:impl Message) {}
     default fn group_begin (&self, _level:L, _collapsed:bool, _msg:impl Message) {}
     default fn group_end   (&self, _level:L) {}
