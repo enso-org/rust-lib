@@ -32,7 +32,7 @@ use shrinkwraprs::Shrinkwrap;
 /// the number of names matched. You can do it by using `$(replace!{$name,()})*`.
 #[macro_export]
 macro_rules! replace {
-    ($a:tt,$b:tt) => {$b}
+    ($a:tt,$($b:tt)*) => {$($b)*}
 }
 
 /// Generates a newtype wrapper for the provided types. It also generates a lot of impls,
