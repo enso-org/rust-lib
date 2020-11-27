@@ -12,7 +12,7 @@
 
 pub mod entry;
 pub mod macros;
-pub mod sink;
+pub mod processor;
 
 pub use enso_prelude as prelude;
 pub use entry::message::Message;
@@ -20,8 +20,8 @@ pub use entry::message::Message;
 use crate::entry::Entry;
 use crate::entry::DefaultFilter;
 use crate::entry::DefaultLevels;
-use crate::sink::DefaultSink;
-use crate::sink::Sink;
+use crate::processor::DefaultProcessor;
+use crate::processor::Processor;
 
 use prelude::*;
 
@@ -37,11 +37,11 @@ use std::fmt::Debug;
 /// The main logger implementation.
 #[derive(CloneRef,Debug,Derivative)]
 #[derivative(Clone(bound=""))]
-pub struct Logger<Filter=DefaultFilter, Sink=DefaultSink, Levels=DefaultLevels> {
+pub struct Logger<Filter=DefaultFilter, Processor=DefaultProcessor, Levels=DefaultLevels> {
     path   : ImString,
     filter : PhantomData<Filter>,
     levels : PhantomData<Levels>,
-    sink   : Rc<RefCell<Sink>>,
+    sink   : Rc<RefCell<Processor>>,
 }
 
 impl<Filter,S,Level> Logger<Filter,S,Level>
@@ -83,7 +83,7 @@ impl<T:AnyLogger> AnyLogger for &T {
     fn path(&self) -> &str { T::path(self) }
 }
 
-impl<Filter,Sink,Level> AnyLogger for Logger<Filter,Sink,Level> {
+impl<Filter,Processor,Level> AnyLogger for Logger<Filter,Processor,Level> {
     fn path (&self) -> &str { &self.path }
 }
 
@@ -96,7 +96,7 @@ impl<Filter,Sink,Level> AnyLogger for Logger<Filter,Sink,Level> {
 macro_rules! define_logger_aliases {
     ($($tp:ident $name:ident $default_name:ident;)*) => {$(
         /// A logger which compile-time filters out all messages with log levels smaller than $tp.
-        pub type $name <S=DefaultSink,L=DefaultLevels> = Logger<entry::filter_from::$tp,S,L>;
+        pub type $name <S=DefaultProcessor,L=DefaultLevels> = Logger<entry::filter_from::$tp,S,L>;
 
         /// The same as $name, but with all type arguments applied, for convenient usage.
         pub type $default_name = $name;
@@ -147,7 +147,7 @@ impl<T:LoggerOps<Level>,Level> LoggerOps<Level> for &T {
 // === Generic Redirection ===
 
 impl<S,Filter,Level,L> LoggerOps<L> for Logger<Filter,S,Level>
-where S:Sink<Entry<Level>>, Level:From<L> {
+where S:Processor<Entry<Level>>, Level:From<L> {
     default fn log(&self, level:L, msg:impl Message) {
         self.sink.borrow_mut().submit(Entry::message(self.path.clone(),level,msg));
     }
@@ -172,7 +172,7 @@ macro_rules! define_compile_time_filtering_rules {
     ($(level::from::$filter:ident for $($level:ident),*;)*) => {$($(
         impl<S,Level> LoggerOps<entry::level::$level>
         for Logger<entry::level::filter_from::$filter,S,Level>
-        where S:Sink<Entry<Level>>, Level:From<entry::level::$level> {
+        where S:Processor<Entry<Level>>, Level:From<entry::level::$level> {
             fn log         (&self, _lvl:entry::level::$level, _msg:impl Message) {}
             fn group_begin (&self, _lvl:entry::level::$level, _collapsed:bool, _msg:impl Message) {}
             fn group_end   (&self, _lvl:entry::level::$level) {}

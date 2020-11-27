@@ -4,8 +4,8 @@ use crate::prelude::*;
 
 use crate::entry::level;
 use crate::entry;
-use crate::sink::formatter::Formatter;
-use crate::sink::formatter::FormatterOutput;
+use crate::processor::formatter::Formatter;
+use crate::processor::formatter::FormatterOutput;
 
 
 

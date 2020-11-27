@@ -4,7 +4,7 @@ use web_sys::console;
 
 use crate::entry::Entry;
 use crate::entry;
-use crate::sink::consumer::Consumer;
+use crate::processor::consumer::Consumer;
 
 
 

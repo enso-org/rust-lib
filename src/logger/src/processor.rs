@@ -1,4 +1,4 @@
-//! Logger sink implementation.
+//! Logger processor implementation.
 
 pub mod consumer;
 pub mod formatter;
@@ -8,43 +8,43 @@ use crate::entry::Entry;
 
 
 
-// ===================
-// === DefaultSink ===
-// ===================
+// ========================
+// === DefaultProcessor ===
+// ========================
 
-/// Default sink implementation.
-pub type DefaultSink =
+/// Default processor implementation.
+pub type DefaultProcessor =
     Pipe <
-        FormatterSink<formatter::JsConsole>,
-        ConsumerSink<consumer::JsConsole>
+        FormatterProcessor<formatter::JsConsole>,
+        ConsumerProcessor<consumer::JsConsole>
     >;
 
 
 
-// ============
-// === Sink ===
-// ============
+// =================
+// === Processor ===
+// =================
 
-/// Trait allowing submitting entries to the sink for a particular verbosity lever group definition.
-/// This trait is implemented automatically by the `define_levels_group` macro.
+/// Trait allowing submitting entries to the processor for a particular verbosity level group
+/// definition.
 #[allow(missing_docs)]
-pub trait Sink<Input> {
+pub trait Processor<Input> {
     type Output;
     fn submit(&mut self, input:Input) -> Self::Output;
 }
 
 
 
-// ============================
-// === Sink Implementations ===
-// ============================
+// ==================================
+// === Processors Implementations ===
+// ==================================
 
 // === Pipe ===
 
-/// A pipe sink builder. It allows defining connected sinks in a linear fashion. The macro below
-/// generates a special type `Pipe` which can accept two or more sinks to be connected together.
-/// Because it uses default arguments, you are allowed to use it like `Pipe<Sink2,Sink2>`, or
-/// `Pipe<Sink1,Sink2,Sink3,Sink4>`.
+/// A pipe processor builder. It allows defining connected processors in a linear fashion. The macro
+/// below generates a special type `Pipe` which can accept two or more processors to be connected
+/// together. Because it uses default arguments, you are allowed to use it like `Pipe<P1,P2>`,
+/// or `Pipe<P1,P2,P3,P4>`.
 #[derive(Debug,Default)]
 #[allow(missing_docs)]
 pub struct PipeBuilder<First,Second> {
@@ -52,8 +52,8 @@ pub struct PipeBuilder<First,Second> {
     pub second : Second,
 }
 
-impl<Input,First,Second> Sink<Input> for PipeBuilder<First,Second>
-where First:Sink<Input>, Second:Sink<First::Output> {
+impl<Input,First,Second> Processor<Input> for PipeBuilder<First,Second>
+where First:Processor<Input>, Second:Processor<First::Output> {
     type Output = Second::Output;
     #[inline(always)]
     fn submit(&mut self, input:Input) -> Self::Output {
@@ -94,13 +94,13 @@ macro_rules! define_pipe_type {
 define_pipes!(Pipe5,Pipe4,Pipe3,Pipe2,Pipe1);
 
 
-// === IdentitySink ===
+// === Identity Processor ===
 
-/// Identity sink. It passes its input to output without performing any modification.
+/// Identity processor. It passes its input to output without performing any modification.
 #[derive(Clone,Copy,Debug,Default)]
 pub struct Identity;
 
-impl<Input> Sink<Input> for Identity {
+impl<Input> Processor<Input> for Identity {
     type Output = Input;
     #[inline(always)]
     fn submit(&mut self, input:Input) -> Self::Output {
@@ -109,15 +109,15 @@ impl<Input> Sink<Input> for Identity {
 }
 
 
-// === FormatterSink ===
+// === FormatterProcessor ===
 
-/// Formatter sink. It uses the provided formatter to format its input.
+/// Formatter processor. It uses the provided formatter to format its input.
 #[derive(Debug,Default)]
-pub struct FormatterSink<Formatter> {
+pub struct FormatterProcessor<Formatter> {
     formatter : Formatter,
 }
 
-impl<Fmt,Lvl> Sink<Entry<Lvl>> for FormatterSink<Fmt>
+impl<Fmt,Lvl> Processor<Entry<Lvl>> for FormatterProcessor<Fmt>
 where Fmt:formatter::Formatter<Lvl> {
     type Output = (Entry<Lvl>,Option<Fmt::Output>);
     #[inline(always)]
@@ -128,16 +128,16 @@ where Fmt:formatter::Formatter<Lvl> {
 }
 
 
-// === ConsumerSink ===
+// === ConsumerProcessor ===
 
-/// Consumer sink. It uses the provided consumer to consume the results, and probably print them
-/// on the screen or write to a file.
+/// Consumer processor. It uses the provided consumer to consume the results, and probably print
+/// them on the screen or write to a file.
 #[derive(Debug,Default)]
-pub struct ConsumerSink<Consumer> {
+pub struct ConsumerProcessor<Consumer> {
     consumer : Consumer,
 }
 
-impl<C,Levels,Message> Sink<(Entry<Levels>,Option<Message>)> for ConsumerSink<C>
+impl<C,Levels,Message> Processor<(Entry<Levels>,Option<Message>)> for ConsumerProcessor<C>
 where C:consumer::Consumer<Levels,Message> {
     type Output = ();
     #[inline(always)]
