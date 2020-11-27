@@ -2,9 +2,9 @@
 //! that the verbosity level mechanism is completely user-extensible and this implementation can be
 //! completely redefined by the user.
 
+use crate::prelude::*;
+
 use crate::entry::Entry;
-use crate::sink::LevelSink;
-use crate::sink::Sink;
 use crate::sink::consumer::Consumer;
 use crate::sink::formatter::Formatter;
 use crate::sink::formatter;
@@ -56,22 +56,6 @@ macro_rules! define_levels_group {
                 }
             }
         )*
-
-        impl<S,Fmt> LevelSink<$group_name> for Sink<S,Fmt>
-        where S:Consumer<$group_name,Fmt::Output>,
-              $(Fmt:Formatter<$name>),*
-        {
-            fn submit(&mut self, path:&str, event:Entry<$group_name>) {
-                match event.level {
-                    $(
-                        $group_name::$name => {
-                            let msg = formatter::format::<Fmt,$name>(path,&event.content);
-                            self.consumer.consume(event,msg);
-                        },
-                    )*
-                }
-            }
-        }
     };
 }
 

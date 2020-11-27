@@ -26,7 +26,6 @@ use crate::entry::Entry;
 use crate::entry::DefaultFilter;
 use crate::entry::DefaultLevels;
 use crate::sink::DefaultSink;
-use crate::sink::LevelSink;
 use crate::sink::Sink;
 
 
@@ -46,7 +45,7 @@ pub struct Logger<Filter=DefaultFilter, Sink=DefaultSink, Levels=DefaultLevels> 
 }
 
 impl<Filter,S,Level> Logger<Filter,S,Level>
-where S:LevelSink<Level>+Default {
+where S:Default {
     /// Constructor.
     pub fn new(path:impl Into<ImString>) -> Self {
         let path   = path.into();
@@ -67,6 +66,20 @@ where S:LevelSink<Level>+Default {
     }
 }
 
+
+pub type XLogger = Logger<
+    DefaultFilter,
+    sink::Pipe<
+        sink::FormatterSink<sink::formatter::JsConsole>,
+        sink::ConsumerSink<sink::consumer::JsConsole>
+    >,
+    DefaultLevels
+>;
+
+pub fn test() {
+    let logger : XLogger = Logger::new("foo");
+    debug!(logger,"foo");
+}
 
 
 // =================
@@ -97,7 +110,7 @@ impl<Filter,Sink,Level> AnyLogger for Logger<Filter,Sink,Level> {
 macro_rules! define_logger_aliases {
     ($($tp:ident $name:ident $default_name:ident;)*) => {$(
         /// A logger which compile-time filters out all messages with log levels smaller than $tp.
-        pub type $name <S=Sink,L=DefaultLevels> = Logger<entry::filter_from::$tp,S,L>;
+        pub type $name <S=DefaultSink,L=DefaultLevels> = Logger<entry::filter_from::$tp,S,L>;
 
         /// The same as $name, but with all type arguments applied, for convenient usage.
         pub type $default_name = $name;
@@ -148,17 +161,17 @@ impl<T:LoggerOps<Level>,Level> LoggerOps<Level> for &T {
 // === Generic Redirection ===
 
 impl<S,Filter,Level,L> LoggerOps<L> for Logger<Filter,S,Level>
-    where S:LevelSink<Level>, Level:From<L> {
+where S:Sink<(ImString,Entry<Level>)>, Level:From<L> {
     default fn log(&self, level:L, msg:impl Message) {
-        self.sink.borrow_mut().submit(&self.path,Entry::message(level,msg))
+        self.sink.borrow_mut().submit((self.path.clone(),Entry::message(level,msg)));
     }
 
     default fn group_begin(&self, level:L, collapsed:bool, msg:impl Message) {
-        self.sink.borrow_mut().submit(&self.path,Entry::group_begin(level,msg,collapsed))
+        self.sink.borrow_mut().submit((self.path.clone(),Entry::group_begin(level,msg,collapsed)));
     }
 
     default fn group_end(&self, level:L) {
-        self.sink.borrow_mut().submit(&self.path,Entry::group_end(level))
+        self.sink.borrow_mut().submit((self.path.clone(),Entry::group_end(level)));
     }
 }
 
@@ -173,7 +186,7 @@ macro_rules! define_compile_time_filtering_rules {
     ($(level::from::$filter:ident for $($level:ident),*;)*) => {$($(
         impl<S,Level> LoggerOps<entry::level::$level>
         for Logger<entry::level::filter_from::$filter,S,Level>
-        where S:LevelSink<Level>, Level:From<entry::level::$level> {
+        where S:Sink<(ImString,Entry<Level>)>, Level:From<entry::level::$level> {
             fn log         (&self, _lvl:entry::level::$level, _msg:impl Message) {}
             fn group_begin (&self, _lvl:entry::level::$level, _collapsed:bool, _msg:impl Message) {}
             fn group_end   (&self, _lvl:entry::level::$level) {}
