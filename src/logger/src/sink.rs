@@ -120,6 +120,7 @@ pub struct FormatterSink<Formatter> {
 impl<Fmt,Lvl> Sink<Entry<Lvl>> for FormatterSink<Fmt>
 where Fmt:formatter::Formatter<Lvl> {
     type Output = (Entry<Lvl>,Option<Fmt::Output>);
+    #[inline(always)]
     fn submit(&mut self, entry:Entry<Lvl>) -> Self::Output {
         let out = <Fmt>::format(&entry.path,&entry.content);
         (entry,out)
@@ -139,6 +140,7 @@ pub struct ConsumerSink<Consumer> {
 impl<C,Levels,Message> Sink<(Entry<Levels>,Option<Message>)> for ConsumerSink<C>
 where C:consumer::Consumer<Levels,Message> {
     type Output = ();
+    #[inline(always)]
     fn submit(&mut self, (entry,message):(Entry<Levels>,Option<Message>)) -> Self::Output {
         self.consumer.consume(entry,message)
     }

@@ -23,8 +23,16 @@ macro_rules! log_template {
 
     ($level:path, $logger:expr, $msg:tt, || $($body:tt)*) => {
         {
-            // FIXME: hardcoded false
             $crate::LoggerOps::<$level>::group_begin(&$logger,$level,false,iformat!($msg));
+            let out = $($body)*;
+            $crate::LoggerOps::<$level>::group_end(&$logger,$level);
+            out
+        }
+    };
+
+    ($level:path, $logger:expr, $msg:tt, collapsed || $($body:tt)*) => {
+        {
+            $crate::LoggerOps::<$level>::group_begin(&$logger,$level,true,iformat!($msg));
             let out = $($body)*;
             $crate::LoggerOps::<$level>::group_end(&$logger,$level);
             out

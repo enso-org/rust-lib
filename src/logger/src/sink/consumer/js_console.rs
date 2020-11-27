@@ -24,9 +24,10 @@ impl<Levels> Consumer<Levels,js_sys::Array> for JsConsole {
                     console::log(&msg);
                 }
             },
-            entry::Content::GroupBegin(_) => {
+            entry::Content::GroupBegin(group) => {
                 if let Some(msg) = message {
-                    console::group_collapsed(&msg);
+                    if group.collapsed { console::group_collapsed(&msg) }
+                    else               { console::group(&msg) }
                 }
             },
             entry::Content::GroupEnd => {

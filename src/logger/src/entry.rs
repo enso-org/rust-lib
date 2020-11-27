@@ -32,17 +32,30 @@ pub struct Entry<Level> {
 #[allow(missing_docs)]
 pub enum Content {
     Message    (String),
-    GroupBegin (String),
+    GroupBegin (GroupBegin),
     GroupEnd
 }
 
+// `Content::GroupBegin` representation.
+#[derive(Debug)]
+#[allow(missing_docs)]
+pub struct GroupBegin {
+    pub collapsed : bool,
+    pub message   : String,
+}
+
 impl Content {
+    /// Constructor.
+    pub fn group_begin(collapsed:bool, message:String) -> Self {
+        Self::GroupBegin(GroupBegin{collapsed,message})
+    }
+
     /// Message getter. Returns `None` if it was group end.
     pub fn message(&self) -> Option<&str> {
         match self {
-            Self::Message(entry)    => Some(entry),
-            Self::GroupBegin(entry) => Some(entry),
-            Self::GroupEnd          => None,
+            Self::Message(msg)  => Some(msg),
+            Self::GroupBegin(t) => Some(&t.message),
+            Self::GroupEnd      => None,
         }
     }
 }
@@ -57,9 +70,10 @@ impl<Level> Entry<Level> {
 
     /// Constructor.
     // FIXME: Unused collapsed
-    pub fn group_begin(path:ImString, level:impl Into<Level>, message:impl Message, _collapsed:bool) -> Self {
+    pub fn group_begin
+    (path:ImString, level:impl Into<Level>, message:impl Message, collapsed:bool) -> Self {
         let level   = level.into();
-        let content = Content::GroupBegin(message.get());
+        let content = Content::group_begin(collapsed,message.get());
         Self {path,level,content}
     }
 
