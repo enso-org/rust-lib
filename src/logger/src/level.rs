@@ -10,7 +10,7 @@
 macro_rules! define_levels {
     ($($name:ident),*) => {
         #[derive(Clone,Copy,Debug,PartialEq,Eq,Hash)]
-        pub enum Level {
+        pub enum Levels {
             $($name),*
         }
 
@@ -18,7 +18,7 @@ macro_rules! define_levels {
             #[derive(Clone,Copy,Debug,Default,PartialEq,Eq,Hash)]
             pub struct $name;
 
-            impl From<$name> for Level {
+            impl From<$name> for Levels {
                 fn from(_:$name) -> Self {
                     Self::$name
                 }
