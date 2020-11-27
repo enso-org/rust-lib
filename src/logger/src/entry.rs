@@ -69,7 +69,6 @@ impl<Level> Entry<Level> {
     }
 
     /// Constructor.
-    // FIXME: Unused collapsed
     pub fn group_begin
     (path:ImString, level:impl Into<Level>, message:impl Message, collapsed:bool) -> Self {
         let level   = level.into();
