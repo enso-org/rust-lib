@@ -25,7 +25,7 @@ pub type Default = JsConsole;
 /// output type. For example, formatters highly tailored for JavaScript console may output a special
 /// console formatting values.
 #[allow(missing_docs)]
-pub trait FormatterOutput {
+pub trait Output {
     type Output;
 }
 
@@ -33,12 +33,12 @@ pub trait FormatterOutput {
 /// need to be formatted. For example, some loggers might want to display a visual indicator when
 /// a group is closed, while others will use API for that.
 #[allow(missing_docs)]
-pub trait Formatter<Level> : FormatterOutput {
+pub trait Definition<Level> : Output {
     fn format(path:&str, entry:&entry::Content) -> Option<Self::Output>;
 }
 
-/// Alias to `Formatter::format` allowing providing the type parameters on call side.
+/// Alias to `Definition::format` allowing providing the type parameters on call side.
 pub fn format<Fmt,Level>(path:&str, entry:&entry::Content) -> Option<Fmt::Output>
-where Fmt:Formatter<Level> {
+where Fmt:Definition<Level> {
     <Fmt>::format(path,entry)
 }

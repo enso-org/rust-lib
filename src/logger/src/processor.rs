@@ -15,8 +15,8 @@ use crate::entry::Entry;
 /// Default processor implementation.
 pub type DefaultProcessor =
     Pipe <
-        FormatterProcessor<formatter::JsConsole>,
-        ConsumerProcessor<consumer::JsConsole>
+        Formatter<formatter::JsConsole>,
+        Consumer<consumer::JsConsole>
     >;
 
 
@@ -109,16 +109,16 @@ impl<Input> Processor<Input> for Identity {
 }
 
 
-// === FormatterProcessor ===
+// === Formatter ===
 
 /// Formatter processor. It uses the provided formatter to format its input.
 #[derive(Debug,Default)]
-pub struct FormatterProcessor<Formatter> {
-    formatter : Formatter,
+pub struct Formatter<T> {
+    formatter : T,
 }
 
-impl<Fmt,Lvl> Processor<Entry<Lvl>> for FormatterProcessor<Fmt>
-where Fmt:formatter::Formatter<Lvl> {
+impl<Fmt,Lvl> Processor<Entry<Lvl>> for Formatter<Fmt>
+where Fmt:formatter::Definition<Lvl> {
     type Output = (Entry<Lvl>,Option<Fmt::Output>);
     #[inline(always)]
     fn submit(&mut self, entry:Entry<Lvl>) -> Self::Output {
@@ -128,17 +128,17 @@ where Fmt:formatter::Formatter<Lvl> {
 }
 
 
-// === ConsumerProcessor ===
+// === Consumer ===
 
 /// Consumer processor. It uses the provided consumer to consume the results, and probably print
 /// them on the screen or write to a file.
 #[derive(Debug,Default)]
-pub struct ConsumerProcessor<Consumer> {
-    consumer : Consumer,
+pub struct Consumer<T> {
+    consumer : T,
 }
 
-impl<C,Levels,Message> Processor<(Entry<Levels>,Option<Message>)> for ConsumerProcessor<C>
-where C:consumer::Consumer<Levels,Message> {
+impl<C,Levels,Message> Processor<(Entry<Levels>,Option<Message>)> for Consumer<C>
+where C:consumer::Definition<Levels,Message> {
     type Output = ();
     #[inline(always)]
     fn submit(&mut self, (entry,message):(Entry<Levels>,Option<Message>)) -> Self::Output {

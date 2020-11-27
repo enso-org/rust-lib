@@ -4,8 +4,7 @@ use crate::prelude::*;
 
 use crate::entry::level;
 use crate::entry;
-use crate::processor::formatter::Formatter;
-use crate::processor::formatter::FormatterOutput;
+use crate::processor::formatter;
 
 
 
@@ -17,7 +16,7 @@ use crate::processor::formatter::FormatterOutput;
 #[derive(Clone,Copy,Debug,Default)]
 pub struct JsConsole;
 
-impl FormatterOutput for JsConsole {
+impl formatter::Output for JsConsole {
     type Output = js_sys::Array;
 }
 
@@ -37,19 +36,19 @@ impl JsConsole {
 
 // === Impls ===
 
-impl<Level> Formatter<Level> for JsConsole {
+impl<Level> formatter::Definition<Level> for JsConsole {
     default fn format(path:&str, entry:&entry::Content) -> Option<Self::Output> {
         entry.message().map(|msg| Self::format_color(path,None, msg.to_owned()))
     }
 }
 
-impl Formatter<level::Warning> for JsConsole {
+impl formatter::Definition<level::Warning> for JsConsole {
     fn format(path:&str, entry:&entry::Content) -> Option<Self::Output> {
         entry.message().map(|msg| Self::format_color(path,Some("orange"),format!("[W] {}",msg)))
     }
 }
 
-impl Formatter<level::Error> for JsConsole {
+impl formatter::Definition<level::Error> for JsConsole {
     fn format(path:&str, entry:&entry::Content) -> Option<Self::Output> {
         entry.message().map(|msg| Self::format_color(path,Some("orangered"),format!("[E] {}",msg)))
     }

@@ -38,21 +38,21 @@ use std::fmt::Debug;
 #[derive(CloneRef,Debug,Derivative)]
 #[derivative(Clone(bound=""))]
 pub struct Logger<Filter=DefaultFilter, Processor=DefaultProcessor, Levels=DefaultLevels> {
-    path   : ImString,
-    filter : PhantomData<Filter>,
-    levels : PhantomData<Levels>,
-    sink   : Rc<RefCell<Processor>>,
+    path      : ImString,
+    filter    : PhantomData<Filter>,
+    levels    : PhantomData<Levels>,
+    processor : Rc<RefCell<Processor>>,
 }
 
 impl<Filter,S,Level> Logger<Filter,S,Level>
 where S:Default {
     /// Constructor.
     pub fn new(path:impl Into<ImString>) -> Self {
-        let path   = path.into();
-        let filter = default();
-        let levels = default();
-        let sink   = default();
-        Self {path,filter,levels,sink}
+        let path      = path.into();
+        let filter    = default();
+        let levels    = default();
+        let processor = default();
+        Self {path,filter,levels,processor}
     }
 
     /// Constructor from another logger keeping the same path.
@@ -149,15 +149,15 @@ impl<T:LoggerOps<Level>,Level> LoggerOps<Level> for &T {
 impl<S,Filter,Level,L> LoggerOps<L> for Logger<Filter,S,Level>
 where S:Processor<Entry<Level>>, Level:From<L> {
     default fn log(&self, level:L, msg:impl Message) {
-        self.sink.borrow_mut().submit(Entry::message(self.path.clone(),level,msg));
+        self.processor.borrow_mut().submit(Entry::message(self.path.clone(),level,msg));
     }
 
     default fn group_begin(&self, level:L, collapsed:bool, msg:impl Message) {
-        self.sink.borrow_mut().submit(Entry::group_begin(self.path.clone(),level,msg,collapsed));
+        self.processor.borrow_mut().submit(Entry::group_begin(self.path.clone(),level,msg,collapsed));
     }
 
     default fn group_end(&self, level:L) {
-        self.sink.borrow_mut().submit(Entry::group_end(self.path.clone(),level));
+        self.processor.borrow_mut().submit(Entry::group_end(self.path.clone(),level));
     }
 }
 

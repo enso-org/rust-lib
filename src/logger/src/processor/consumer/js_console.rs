@@ -4,7 +4,7 @@ use web_sys::console;
 
 use crate::entry::Entry;
 use crate::entry;
-use crate::processor::consumer::Consumer;
+use crate::processor::consumer;
 
 
 
@@ -16,7 +16,7 @@ use crate::processor::consumer::Consumer;
 #[derive(Clone,Copy,Debug,Default)]
 pub struct JsConsole;
 
-impl<Levels> Consumer<Levels,js_sys::Array> for JsConsole {
+impl<Levels> consumer::Definition<Levels,js_sys::Array> for JsConsole {
     fn consume(&mut self, event:Entry<Levels>, message:Option<js_sys::Array>) {
         match event.content {
             entry::Content::Message(_) => {
