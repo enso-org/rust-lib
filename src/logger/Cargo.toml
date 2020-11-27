@@ -21,8 +21,8 @@ publish = true
 default = []
 
 [dependencies]
-enso-prelude = { version = "0.1.5" , path = "../prelude"      }
-enso-shapely = { version = "0.1.1" , path = "../shapely/impl" }
+enso-prelude = { path = "../prelude"      }
+enso-shapely = { path = "../shapely/impl" }
 wasm-bindgen = { version = "=0.2.58", features = ["nightly"]  }
 js-sys = { version = "0.3.28" }
 

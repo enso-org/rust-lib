@@ -17,16 +17,16 @@ pub mod sink;
 pub use enso_prelude as prelude;
 pub use entry::message::Message;
 
-use prelude::*;
-
-use enso_shapely::CloneRef;
-use std::fmt::Debug;
-
 use crate::entry::Entry;
 use crate::entry::DefaultFilter;
 use crate::entry::DefaultLevels;
 use crate::sink::DefaultSink;
 use crate::sink::Sink;
+
+use prelude::*;
+
+use enso_shapely::CloneRef;
+use std::fmt::Debug;
 
 
 
@@ -66,20 +66,6 @@ where S:Default {
     }
 }
 
-
-pub type XLogger = Logger<
-    DefaultFilter,
-    sink::Pipe<
-        sink::FormatterSink<sink::formatter::JsConsole>,
-        sink::ConsumerSink<sink::consumer::JsConsole>
-    >,
-    DefaultLevels
->;
-
-pub fn test() {
-    let logger : XLogger = Logger::new("foo");
-    debug!(logger,"foo");
-}
 
 
 // =================
@@ -161,17 +147,17 @@ impl<T:LoggerOps<Level>,Level> LoggerOps<Level> for &T {
 // === Generic Redirection ===
 
 impl<S,Filter,Level,L> LoggerOps<L> for Logger<Filter,S,Level>
-where S:Sink<(ImString,Entry<Level>)>, Level:From<L> {
+where S:Sink<Entry<Level>>, Level:From<L> {
     default fn log(&self, level:L, msg:impl Message) {
-        self.sink.borrow_mut().submit((self.path.clone(),Entry::message(level,msg)));
+        self.sink.borrow_mut().submit(Entry::message(self.path.clone(),level,msg));
     }
 
     default fn group_begin(&self, level:L, collapsed:bool, msg:impl Message) {
-        self.sink.borrow_mut().submit((self.path.clone(),Entry::group_begin(level,msg,collapsed)));
+        self.sink.borrow_mut().submit(Entry::group_begin(self.path.clone(),level,msg,collapsed));
     }
 
     default fn group_end(&self, level:L) {
-        self.sink.borrow_mut().submit((self.path.clone(),Entry::group_end(level)));
+        self.sink.borrow_mut().submit(Entry::group_end(self.path.clone(),level));
     }
 }
 
@@ -186,7 +172,7 @@ macro_rules! define_compile_time_filtering_rules {
     ($(level::from::$filter:ident for $($level:ident),*;)*) => {$($(
         impl<S,Level> LoggerOps<entry::level::$level>
         for Logger<entry::level::filter_from::$filter,S,Level>
-        where S:Sink<(ImString,Entry<Level>)>, Level:From<entry::level::$level> {
+        where S:Sink<Entry<Level>>, Level:From<entry::level::$level> {
             fn log         (&self, _lvl:entry::level::$level, _msg:impl Message) {}
             fn group_begin (&self, _lvl:entry::level::$level, _collapsed:bool, _msg:impl Message) {}
             fn group_end   (&self, _lvl:entry::level::$level) {}

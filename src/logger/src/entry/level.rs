@@ -4,11 +4,6 @@
 
 use crate::prelude::*;
 
-use crate::entry::Entry;
-use crate::sink::consumer::Consumer;
-use crate::sink::formatter::Formatter;
-use crate::sink::formatter;
-
 
 
 // ==============

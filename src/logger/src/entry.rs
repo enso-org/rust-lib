@@ -7,6 +7,8 @@ pub use level::DefaultLevels;
 pub use level::DefaultFilter;
 pub use level::filter_from;
 
+use crate::prelude::*;
+
 use message::Message;
 
 
@@ -20,6 +22,7 @@ use message::Message;
 #[derive(Debug)]
 #[allow(missing_docs)]
 pub struct Entry<Level> {
+    pub path    : ImString,
     pub level   : Level,
     pub content : Content,
 }
@@ -46,24 +49,24 @@ impl Content {
 
 impl<Level> Entry<Level> {
     /// Constructor.
-    pub fn message(level:impl Into<Level>, message:impl Message) -> Self {
+    pub fn message(path:ImString, level:impl Into<Level>, message:impl Message) -> Self {
         let level   = level.into();
         let content = Content::Message(message.get());
-        Self {level,content}
+        Self {path,level,content}
     }
 
     /// Constructor.
     // FIXME: Unused collapsed
-    pub fn group_begin(level:impl Into<Level>, message:impl Message, _collapsed:bool) -> Self {
-        let level = level.into();
-        let content    = Content::GroupBegin(message.get());
-        Self {level,content}
+    pub fn group_begin(path:ImString, level:impl Into<Level>, message:impl Message, _collapsed:bool) -> Self {
+        let level   = level.into();
+        let content = Content::GroupBegin(message.get());
+        Self {path,level,content}
     }
 
     /// Constructor.
-    pub fn group_end(level:impl Into<Level>) -> Self {
-        let level = level.into();
-        let content    = Content::GroupEnd;
-        Self {level,content}
+    pub fn group_end(path:ImString, level:impl Into<Level>) -> Self {
+        let level   = level.into();
+        let content = Content::GroupEnd;
+        Self {path,level,content}
     }
 }

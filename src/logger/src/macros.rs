@@ -36,6 +36,9 @@ macro_rules! log_template {
 // === Macro Generation ===
 
 /// Internal utility for logging macros. Generates all the logging macros.
+///
+/// Please note that the special pattern `$d` expands to just `$` in the generated macro from this
+/// macro.
 macro_rules! define_log_macros {
     ($($d:tt $name:ident $tp_name:ident;)*) => {$(
         /// $tp_name logging macro.
