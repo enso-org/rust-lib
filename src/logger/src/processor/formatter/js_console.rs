@@ -3,7 +3,7 @@
 use crate::prelude::*;
 
 use crate::entry::level;
-use crate::entry;
+use crate::entry::GenericEntry;
 use crate::processor::formatter;
 
 
@@ -36,20 +36,24 @@ impl JsConsole {
 
 // === Impls ===
 
-impl<Level> formatter::Definition<Level> for JsConsole {
-    default fn format(path:&str, entry:&entry::Content) -> Option<Self::Output> {
-        entry.message().map(|msg| Self::format_color(path,None, msg.to_owned()))
-    }
-}
-
 impl formatter::Definition<level::Warning> for JsConsole {
-    fn format(path:&str, entry:&entry::Content) -> Option<Self::Output> {
-        entry.message().map(|msg| Self::format_color(path,Some("orange"),format!("[W] {}",msg)))
+    fn format(entry:&GenericEntry) -> Option<Self::Output> {
+        entry.content.message().map(|msg|
+            Self::format_color(&entry.path,Some("orange"),format!("[W] {}",msg))
+        )
     }
 }
 
 impl formatter::Definition<level::Error> for JsConsole {
-    fn format(path:&str, entry:&entry::Content) -> Option<Self::Output> {
-        entry.message().map(|msg| Self::format_color(path,Some("orangered"),format!("[E] {}",msg)))
+    fn format(entry:&GenericEntry) -> Option<Self::Output> {
+        entry.content.message().map(|msg|
+            Self::format_color(&entry.path,Some("orangered"),format!("[E] {}",msg))
+        )
+    }
+}
+
+impl<Level> formatter::Definition<Level> for JsConsole {
+    default fn format(entry:&GenericEntry) -> Option<Self::Output> {
+        entry.content.message().map(|msg| Self::format_color(&entry.path,None,msg.to_owned()))
     }
 }

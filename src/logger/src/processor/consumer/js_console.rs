@@ -18,7 +18,7 @@ pub struct JsConsole;
 
 impl<Levels> consumer::Definition<Levels,js_sys::Array> for JsConsole {
     fn consume(&mut self, event:Entry<Levels>, message:Option<js_sys::Array>) {
-        match event.content {
+        match &event.content {
             entry::Content::Message(_) => {
                 if let Some(msg) = message {
                     console::log(&msg);

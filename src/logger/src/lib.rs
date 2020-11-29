@@ -149,15 +149,15 @@ impl<T:LoggerOps<Level>,Level> LoggerOps<Level> for &T {
 impl<S,Filter,Level,L> LoggerOps<L> for Logger<Filter,S,Level>
 where S:Processor<Entry<Level>>, Level:From<L> {
     default fn log(&self, level:L, msg:impl Message) {
-        self.processor.borrow_mut().submit(Entry::message(self.path.clone(),level,msg));
+        self.processor.borrow_mut().submit(Entry::message(level,self.path.clone(),msg));
     }
 
     default fn group_begin(&self, level:L, collapsed:bool, msg:impl Message) {
-        self.processor.borrow_mut().submit(Entry::group_begin(self.path.clone(),level,msg,collapsed));
+        self.processor.borrow_mut().submit(Entry::group_begin(level,self.path.clone(),msg,collapsed));
     }
 
     default fn group_end(&self, level:L) {
-        self.processor.borrow_mut().submit(Entry::group_end(self.path.clone(),level));
+        self.processor.borrow_mut().submit(Entry::group_end(level,self.path.clone()));
     }
 }
 

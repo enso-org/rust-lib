@@ -19,16 +19,23 @@ use message::Message;
 
 /// Logger entry. Contains the message, log level, and may contain other information in the future,
 /// like time, frame number, etc.
-#[derive(Debug)]
+#[derive(Clone,Debug)]
 #[allow(missing_docs)]
 pub struct Entry<Level> {
+    pub level     : Level,
+    pub gen_entry : GenericEntry,
+}
+
+/// Internal structure of `Entry`.
+#[derive(Clone,Debug)]
+#[allow(missing_docs)]
+pub struct GenericEntry {
     pub path    : ImString,
-    pub level   : Level,
     pub content : Content,
 }
 
 /// Content of the entry. Can either contain simple message, or grouping information.
-#[derive(Debug)]
+#[derive(Clone,Debug)]
 #[allow(missing_docs)]
 pub enum Content {
     Message    (String),
@@ -37,11 +44,25 @@ pub enum Content {
 }
 
 // `Content::GroupBegin` representation.
-#[derive(Debug)]
+#[derive(Clone,Debug)]
 #[allow(missing_docs)]
 pub struct GroupBegin {
     pub collapsed : bool,
     pub message   : String,
+}
+
+impl<Level> Deref for Entry<Level> {
+    type Target = GenericEntry;
+    fn deref(&self) -> &Self::Target {
+        &self.gen_entry
+    }
+}
+
+impl Deref for GenericEntry {
+    type Target = Content;
+    fn deref(&self) -> &Self::Target {
+        &self.content
+    }
 }
 
 impl Content {
@@ -62,24 +83,45 @@ impl Content {
 
 impl<Level> Entry<Level> {
     /// Constructor.
-    pub fn message(path:ImString, level:impl Into<Level>, message:impl Message) -> Self {
-        let level   = level.into();
-        let content = Content::Message(message.get());
-        Self {path,level,content}
+    pub fn message(level:impl Into<Level>, path:ImString, message:impl Message) -> Self {
+        let level    = level.into();
+        let gen_entry = GenericEntry::message(path,message);
+        Self {level,gen_entry}
     }
 
     /// Constructor.
     pub fn group_begin
-    (path:ImString, level:impl Into<Level>, message:impl Message, collapsed:bool) -> Self {
-        let level   = level.into();
-        let content = Content::group_begin(collapsed,message.get());
-        Self {path,level,content}
+    (level:impl Into<Level>, path:ImString, message:impl Message, collapsed:bool) -> Self {
+        let level     = level.into();
+        let gen_entry = GenericEntry::group_begin(path,message,collapsed);
+        Self {level,gen_entry}
     }
 
     /// Constructor.
-    pub fn group_end(path:ImString, level:impl Into<Level>) -> Self {
-        let level   = level.into();
+    pub fn group_end(level:impl Into<Level>, path:ImString) -> Self {
+        let level     = level.into();
+        let gen_entry = GenericEntry::group_end(path);
+        Self {level,gen_entry}
+    }
+}
+
+impl GenericEntry {
+    /// Constructor.
+    pub fn message(path:ImString, message:impl Message) -> Self {
+        let content = Content::Message(message.get());
+        Self {path,content}
+    }
+
+    /// Constructor.
+    pub fn group_begin
+    (path:ImString, message:impl Message, collapsed:bool) -> Self {
+        let content = Content::group_begin(collapsed,message.get());
+        Self {path,content}
+    }
+
+    /// Constructor.
+    pub fn group_end(path:ImString) -> Self {
         let content = Content::GroupEnd;
-        Self {path,level,content}
+        Self {path,content}
     }
 }

@@ -3,6 +3,9 @@
 //! completely redefined by the user.
 
 use crate::prelude::*;
+use crate::processor::formatter;
+use crate::entry::Entry;
+use crate::entry::level;
 
 
 
@@ -51,8 +54,21 @@ macro_rules! define_levels_group {
                 }
             }
         )*
+
+        impl<T> formatter::GenericDefinition<DefaultLevels> for T
+        where $(T : formatter::Definition<level::$name>),* {
+            fn generic_format(entry:&Entry<DefaultLevels>) -> Option<Self::Output> {
+                match entry.level {
+                    $(
+                        DefaultLevels::$name =>
+                            formatter::format::<T,level::$name> (&entry.gen_entry)
+                    ),*
+                }
+            }
+        }
     };
 }
+
 
 
 // =======================
@@ -70,3 +86,7 @@ define_levels_group!(DefaultLevels {Trace,Debug,Info,Warning,Error});
 
 /// Default compile-time logger filtering. Keeps all logs.
 pub type DefaultFilter = filter_from::Trace;
+
+
+
+

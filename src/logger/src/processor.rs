@@ -118,11 +118,11 @@ pub struct Formatter<T> {
 }
 
 impl<Fmt,Lvl> Processor<Entry<Lvl>> for Formatter<Fmt>
-where Fmt:formatter::Definition<Lvl> {
+where Fmt:formatter::GenericDefinition<Lvl> {
     type Output = (Entry<Lvl>,Option<Fmt::Output>);
     #[inline(always)]
     fn submit(&mut self, entry:Entry<Lvl>) -> Self::Output {
-        let out = <Fmt>::format(&entry.path,&entry.content);
+        let out = <Fmt>::generic_format(&entry);
         (entry,out)
     }
 }
