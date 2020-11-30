@@ -17,13 +17,13 @@ pub mod processor;
 pub use enso_prelude as prelude;
 pub use entry::message::Message;
 
+use prelude::*;
+
 use crate::entry::Entry;
 use crate::entry::DefaultFilter;
 use crate::entry::DefaultLevels;
 use crate::processor::DefaultProcessor;
 use crate::processor::Processor;
-
-use prelude::*;
 
 use enso_shapely::CloneRef;
 use std::fmt::Debug;
@@ -34,7 +34,15 @@ use std::fmt::Debug;
 // === Logger ===
 // ==============
 
-/// The main logger implementation.
+/// The main logger implementation. It is parametrized by three main types:
+/// - Filter, which is used for compile-time message filtering (zero runtime overhead).
+/// - Processor, which defines a pipeline of what happens to the logged messages. Read the docs of
+///   `Processor` to learn more.
+/// - Levels, which is a structure defining all possible verbosity levels this logger should handle.
+///   See the `level.rs` module to learn how to define custom verbosity levels.
+///
+/// In order to learn how to use the logger, please refer to the docs in `macros.rs`, where a lot
+/// of logging utility macros are defined.
 #[derive(CloneRef,Debug,Derivative)]
 #[derivative(Clone(bound=""))]
 pub struct Logger<Filter=DefaultFilter, Processor=DefaultProcessor, Levels=DefaultLevels> {
@@ -169,7 +177,7 @@ where S:Processor<Entry<Level>>, Level:From<L> {
 /// below to learn more.
 #[macro_export]
 macro_rules! define_compile_time_filtering_rules {
-    ($(level::from::$filter:ident for $($level:ident),*;)*) => {$($(
+    ($(for level::from::$filter:ident remove $($level:ident),*;)*) => {$($(
         impl<S,Level> LoggerOps<entry::level::$level>
         for Logger<entry::level::filter_from::$filter,S,Level>
         where S:Processor<Entry<Level>>, Level:From<entry::level::$level> {
@@ -184,8 +192,8 @@ macro_rules! define_compile_time_filtering_rules {
 // === Compile-time filtering of built-in levels ===
 
 define_compile_time_filtering_rules! {
-    level::from::Debug   for Trace;
-    level::from::Info    for Trace,Debug;
-    level::from::Warning for Trace,Debug,Info;
-    level::from::Error   for Trace,Debug,Info,Warning;
+    for level::from::Debug   remove Trace;
+    for level::from::Info    remove Trace,Debug;
+    for level::from::Warning remove Trace,Debug,Info;
+    for level::from::Error   remove Trace,Debug,Info,Warning;
 }

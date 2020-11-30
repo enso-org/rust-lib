@@ -19,6 +19,9 @@ use message::Message;
 
 /// Logger entry. Contains the message, log level, and may contain other information in the future,
 /// like time, frame number, etc.
+///
+/// Please note that grouping is realized by special entries `GroupBegin` and `GroupEnd`. They can
+/// be used to define nested groups. See the `macros.rs` module to see example usage.
 #[derive(Clone,Debug)]
 #[allow(missing_docs)]
 pub struct Entry<Level> {
@@ -30,6 +33,7 @@ pub struct Entry<Level> {
 #[derive(Clone,Debug)]
 #[allow(missing_docs)]
 pub struct GenericEntry {
+    /// A dot-separated names of parent loggers and this logger.
     pub path    : ImString,
     pub content : Content,
 }

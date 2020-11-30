@@ -47,8 +47,18 @@ mod js {
 // === Processor ===
 // =================
 
-/// Trait allowing submitting entries to the processor for a particular verbosity level group
-/// definition.
+/// The most primitive building block of a logger. Processor takes some input and returns some
+/// output, forming a message processing seqline.
+///
+/// Processors can be chained together with the use of the `Seq` processor. They can perform both
+/// simple actions like formatting the logs or outputting them to console, as well as more complex
+/// ones, like buffering them globally and dumping them on demand only. There are a lot of sample
+/// processors defined in this module and its sub-modules.
+///
+/// Processors always implement the `Default` trait, so it's sufficient to construct them using
+/// type-level mechanisms only. For example, one of the simplest usages of processors would be a
+/// processor defined as `Seq<Formatter<formatter::JsConsole>,Consumer<consumer::JsConsole>>`,
+/// which for each input message first formats it and then prints it to the JavaScript console.
 #[allow(missing_docs)]
 pub trait Processor<Input> {
     type Output;
@@ -61,20 +71,20 @@ pub trait Processor<Input> {
 // === Processors Implementations ===
 // ==================================
 
-// === Pipe ===
+// === Seq ===
 
-/// A pipe processor builder. It allows defining connected processors in a linear fashion. The macro
-/// below generates a special type `Pipe` which can accept two or more processors to be connected
-/// together. Because it uses default arguments, you are allowed to use it like `Pipe<P1,P2>`,
-/// or `Pipe<P1,P2,P3,P4>`.
+/// A seq processor builder. It allows defining connected processors in a linear fashion. The macro
+/// below generates a special type `Seq` which can accept two or more processors to be connected
+/// together. Because it uses default arguments, you are allowed to use it like `Seq<P1,P2>`,
+/// or `Seq<P1,P2,P3,P4>`.
 #[derive(Debug,Default)]
 #[allow(missing_docs)]
-pub struct PipeBuilder<First,Second> {
+pub struct SeqBuilder<First,Second> {
     pub first  : First,
     pub second : Second,
 }
 
-impl<Input,First,Second> Processor<Input> for PipeBuilder<First,Second>
+impl<Input,First,Second> Processor<Input> for SeqBuilder<First,Second>
 where First:Processor<Input>, Second:Processor<First::Output> {
     type Output = Second::Output;
     #[inline(always)]
@@ -84,36 +94,105 @@ where First:Processor<Input>, Second:Processor<First::Output> {
 }
 
 
-// === Nested Pipes ===
+// === Multi-args Seqs ===
 
-macro_rules! define_pipes {
+macro_rules! define_seqs {
     ($arg:tt,$($args:tt),*) => {
-        define_sub_pipes!{$arg,$($args),*}
-        /// A generic pipe implementation. See docs of `PipeBuilder` to learn more.
-        pub type Pipe<T=Identity,$($args=Identity),*> = $arg<T,$($args),*>;
+        define_sub_seqs!{$arg,$($args),*}
+        /// A generic seq implementation. See docs of `SeqBuilder` to learn more.
+        pub type Seq<T=Identity,$($args=Identity),*> = $arg<T,$($args),*>;
     };
 }
 
-macro_rules! define_sub_pipes {
+macro_rules! define_sub_seqs {
     () => {};
     ($arg:tt) => {};
     ($arg:tt, $($args:tt),*) => {
-        /// Nested pipe. See docs of `PipeBuilder` to learn more.
-        pub type $arg<$arg,$($args),*> = define_pipe_type!{$arg,$($args),*};
-        define_sub_pipes! {$($args),*}
+        /// Nested seq. See docs of `SeqBuilder` to learn more.
+        pub type $arg<$arg,$($args),*> = define_seq_type!{$arg,$($args),*};
+        define_sub_seqs! {$($args),*}
     };
 }
 
-macro_rules! define_pipe_type {
+macro_rules! define_seq_type {
     ($arg1:tt, $arg2:tt) => {
-        PipeBuilder<$arg1,$arg2>
+        SeqBuilder<$arg1,$arg2>
     };
     ($arg:tt $(,$args:tt)*) => {
-        PipeBuilder<$arg,define_pipe_type!{$($args),*}>
+        SeqBuilder<$arg,define_seq_type!{$($args),*}>
     };
 }
 
-define_pipes!(Pipe5,Pipe4,Pipe3,Pipe2,Pipe1);
+define_seqs!(Seq5,Seq4,Seq3,Seq2,Seq1);
+
+
+// === Branch ===
+
+/// A branch processor builder. It passes the incoming input to all of its children. The macro
+/// below generates a special type `Branch` which can accept two or more processors to be connected
+/// together. Because it uses default arguments, you are allowed to use it like `Branch<P1,P2>`,
+/// or `Branch<P1,P2,P3,P4>`.
+#[derive(Debug,Default)]
+#[allow(missing_docs)]
+pub struct BranchBuilder<First,Second> {
+    pub first  : First,
+    pub second : Second,
+}
+
+impl<Input,First,Second> Processor<Input> for BranchBuilder<First,Second>
+where First:Processor<Input>, Second:Processor<Input>, Input:Clone {
+    type Output = ();
+    #[inline(always)]
+    fn submit(&mut self, input:Input) -> Self::Output {
+        self.first.submit(input.clone());
+        self.second.submit(input);
+    }
+}
+
+
+// === Multi-args Branches ===
+
+macro_rules! define_branches {
+    ($arg:tt,$($args:tt),*) => {
+        define_sub_branches!{$arg,$($args),*}
+        /// A generic seq implementation. See docs of `SeqBuilder` to learn more.
+        pub type Branch<T=Drop,$($args=Drop),*> = $arg<T,$($args),*>;
+    };
+}
+
+macro_rules! define_sub_branches {
+    () => {};
+    ($arg:tt) => {};
+    ($arg:tt, $($args:tt),*) => {
+        /// Nested seq. See docs of `SeqBuilder` to learn more.
+        pub type $arg<$arg,$($args),*> = define_branch_type!{$arg,$($args),*};
+        define_sub_branches! {$($args),*}
+    };
+}
+
+macro_rules! define_branch_type {
+    ($arg1:tt, $arg2:tt) => {
+        SeqBuilder<$arg1,$arg2>
+    };
+    ($arg:tt $(,$args:tt)*) => {
+        SeqBuilder<$arg,define_branch_type!{$($args),*}>
+    };
+}
+
+define_branches!(Branch5,Branch4,Branch3,Branch2,Branch1);
+
+
+// === Drop Processor ===
+
+/// Drop processor. Does nothing, just drops the input.
+#[derive(Clone,Copy,Debug,Default)]
+pub struct Drop;
+
+impl<Input> Processor<Input> for Drop {
+    type Output = ();
+    #[inline(always)]
+    fn submit(&mut self, _input:Input) {}
+}
 
 
 // === Identity Processor ===
@@ -205,17 +284,24 @@ pub struct BufferModel<Input,Next> {
     next       : Next,
 }
 
-impl<Input,Next:Default> Default for BufferModel<Input,Next> {
-    fn default() -> Self {
+impl<Input,Next> BufferModel<Input,Next>
+where Next:Processor<Input> {
+    /// Constructor.
+    pub fn new() -> Self
+    where Next:Default {
         let auto_flush = js::check_auto_flush();
         let buffer     = default();
         let next       = default();
-        Self {buffer,auto_flush,next}
+        Self {buffer,auto_flush,next} . init()
     }
-}
 
-impl<Input,Next> BufferModel<Input,Next>
-    where Next:Processor<Input> {
+    fn init(mut self) -> Self {
+        if cfg!(debug_assertions) {
+            self.flush_and_enable_auto_flush()
+        }
+        self
+    }
+
     /// Submit the input to the buffer or the subsequent processor in case the `auto_flush` is
     /// enabled.
     pub fn submit(&mut self, input:Input) {
@@ -237,6 +323,13 @@ impl<Input,Next> BufferModel<Input,Next>
     pub fn flush_and_enable_auto_flush(&mut self) {
         self.flush();
         self.auto_flush = true;
+    }
+}
+
+impl<Input,Next> Default for BufferModel<Input,Next>
+where Next : Processor<Input> + Default {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -319,7 +412,7 @@ pub type DefaultProcessor = Global<DefaultGlobalProcessor>;
 define_global_processor! {
     DefaultGlobalProcessor =
         Buffer<Entry<DefaultLevels>,
-            Pipe <
+            Seq <
                 Formatter<formatter::JsConsole>,
                 Consumer<consumer::JsConsole>
             >
