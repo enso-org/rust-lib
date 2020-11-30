@@ -42,6 +42,7 @@ macro_rules! log_template {
     };
 }
 
+/// Internal utility for logging macros.
 #[macro_export]
 macro_rules! log_template_group {
     ($expand:ident, $level:path, $logger:expr, [$($msg:tt)*], || $($body:tt)*) => {

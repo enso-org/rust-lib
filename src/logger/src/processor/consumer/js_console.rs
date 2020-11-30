@@ -5,6 +5,27 @@ use web_sys::console;
 use crate::entry::Entry;
 use crate::entry;
 use crate::processor::consumer;
+use wasm_bindgen::prelude::*;
+
+
+
+mod js {
+    use super::*;
+    #[wasm_bindgen(inline_js = "
+        export function console_group_end() {
+            console.groupEnd()
+        }
+    ")]
+    extern "C" {
+        /// FIXME[WD]: Issue https://github.com/rustwasm/wasm-bindgen/issues/2376
+        /// This is just the same as `wasm_bindgen::console::group_end` with one important
+        /// difference. It seems that `wasm_bindgen` somehow caches all functions without args on
+        /// initialization, and thus, as we are redefining what `console.group_end` is in JS, the
+        /// function provided by the library, unlike this one, does not reflect the change.
+        #[allow(unsafe_code)]
+        pub fn console_group_end();
+    }
+}
 
 
 
@@ -31,7 +52,7 @@ impl<Levels> consumer::Definition<Levels,js_sys::Array> for JsConsole {
                 }
             },
             entry::Content::GroupEnd => {
-                console::group_end()
+                js::console_group_end()
             }
         }
     }
