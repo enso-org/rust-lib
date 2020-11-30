@@ -52,10 +52,19 @@ pub struct Logger<Filter=DefaultFilter, Processor=DefaultProcessor, Levels=Defau
     processor : Rc<RefCell<Processor>>,
 }
 
-impl<Filter,S,Level> Logger<Filter,S,Level>
-where S:Default {
-    /// Constructor.
-    pub fn new(path:impl Into<ImString>) -> Self {
+impl<Filter,Processor,Level> Logger<Filter,Processor,Level>
+where Processor:Default {
+    /// Constructor from another logger keeping the same path.
+    pub fn new_from(logger:impl AnyLogger) -> Self {
+        Self::new(logger.path())
+    }
+}
+
+impl<Filter,Processor,Level> AnyLogger for Logger<Filter,Processor,Level>
+where Processor:Default {
+    type Owned = Self;
+
+    fn new(path:impl Into<ImString>) -> Self {
         let path      = path.into();
         let filter    = default();
         let levels    = default();
@@ -63,15 +72,7 @@ where S:Default {
         Self {path,filter,levels,processor}
     }
 
-    /// Constructor from another logger keeping the same path.
-    pub fn new_from(logger:impl AnyLogger) -> Self {
-        Self::new(logger.path())
-    }
-
-    /// Creates a new logger with this logger as a parent.
-    pub fn sub(logger:impl AnyLogger, id:impl AsRef<str>) -> Self {
-        Self::new(iformat!("{logger.path()}.{id.as_ref()}"))
-    }
+    fn path (&self) -> &str { &self.path }
 }
 
 
@@ -83,16 +84,26 @@ where S:Default {
 /// A common interface for all loggers. Exposing all information needed to create a particular
 /// sub-logger from a given parent logger of any type.
 pub trait AnyLogger {
+    type Owned;
+
+    /// Constructor.
+    fn new(path:impl Into<ImString>) -> Self::Owned;
+
     /// Path that is used as an unique identifier of this logger.
     fn path(&self) -> &str;
+
+    /// Creates a new logger with this logger as a parent. It can be useful when we need to create
+    /// a sub-logger for a generic type parameter.
+    fn sub(logger:impl AnyLogger, id:impl AsRef<str>) -> Self::Owned
+    where Self::Owned : AnyLogger<Owned=Self::Owned> {
+        Self::Owned::new(iformat!("{logger.path()}.{id.as_ref()}"))
+    }
 }
 
 impl<T:AnyLogger> AnyLogger for &T {
+    type Owned = T::Owned;
+    fn new(path:impl Into<ImString>) -> Self::Owned { T::new(path) }
     fn path(&self) -> &str { T::path(self) }
-}
-
-impl<Filter,Processor,Level> AnyLogger for Logger<Filter,Processor,Level> {
-    fn path (&self) -> &str { &self.path }
 }
 
 
@@ -128,7 +139,7 @@ define_logger_aliases! {
 /// Primitive operations on a logger. The type parameter allows for compile-time log level filtering
 /// of the messages.
 #[allow(missing_docs)]
-pub trait LoggerOps<Level> {
+pub trait LoggerOps<Level=DefaultLevels> {
     fn log         (&self, level:Level, msg:impl Message);
     fn group_begin (&self, level:Level, collapsed:bool, msg:impl Message);
     fn group_end   (&self, level:Level);

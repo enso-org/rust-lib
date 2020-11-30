@@ -366,7 +366,6 @@ pub fn global_processor<T:GlobalProcessor>() -> &'static mut T::Processor {
     T::get_mut()
 }
 
-
 /// Define a global processor based on the provided type. Read the docs of `GlobalProcessor` to
 /// learn more.
 #[macro_export]
@@ -407,14 +406,26 @@ macro_rules! define_global_processor {
 // ========================
 
 /// Default processor implementation.
-pub type DefaultProcessor = Global<DefaultGlobalProcessor>;
+#[cfg(target_arch="wasm32")]
+pub type DefaultProcessor = DefaultJsProcessor;
+
+/// Default processor implementation.
+#[cfg(not(target_arch="wasm32"))]
+pub type DefaultProcessor = DefaultNativeProcessor;
+
+#[allow(dead_code)]
+type DefaultJsProcessor = Global<DefaultGlobalJsProcessor>;
+
+#[allow(dead_code)]
+type DefaultNativeProcessor =
+    Seq<Formatter<formatter::NativeConsole>,Consumer<consumer::NativeConsole>>;
 
 define_global_processor! {
-    DefaultGlobalProcessor =
+    DefaultGlobalJsProcessor =
         Buffer<Entry<DefaultLevels>,
             Seq <
-                Formatter<formatter::JsConsole>,
-                Consumer<consumer::JsConsole>
+                Formatter<formatter::NativeConsole>,
+                Consumer<consumer::NativeConsole>
             >
         >;
 }

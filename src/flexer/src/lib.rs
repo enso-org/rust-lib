@@ -1036,6 +1036,7 @@ pub mod prelude {
     pub use lazy_reader::ReaderOps;
     pub use lazy_reader::Reader;
     pub use logger::AnyLogger;
+    pub use logger::macros::*;
 
     /// The lazy reader library.
     pub mod reader {
@@ -1046,7 +1047,7 @@ pub mod prelude {
     pub mod logger {
         pub use enso_logger::*;
         pub use enso_logger::WarningLogger as Disabled;
-        pub use enso_logger::logger::Logger as Enabled;
+        pub use enso_logger::TraceLogger as Enabled;
     }
 }
 
@@ -1117,7 +1118,7 @@ where Definition : State,
 impl<Definition,Output,Logger> Flexer<Definition,Output,Logger>
 where Definition : State,
       Output     : Clone,
-      Logger     : AnyLogger<Owned=Logger> {
+      Logger     : AnyLogger<Owned=Logger> + LoggerOps<logger::entry::level::Debug> {
     /// Get the lexer result.
     pub fn result(&mut self) -> &Output {
         &self.output
@@ -1135,7 +1136,7 @@ where Definition : State,
 
     /// Tell the lexer to enter the state described by `state`.
     pub fn push_state(&mut self, state:group::Identifier) {
-        self.logger.group_begin(
+        self.logger.group_begin(logger::entry::level::Debug,false,
             ||format!("Enter State: {}",self.groups().group(state).name.as_str())
         );
         self.state_stack.push(state);
@@ -1150,7 +1151,7 @@ where Definition : State,
             None        => (),
             Some(ident) => debug!(self.logger,"Leave State: {self.groups().group(ident).name}"),
         };
-        self.logger.group_end();
+        self.logger.group_end(logger::entry::level::Debug);
         result
     }
 

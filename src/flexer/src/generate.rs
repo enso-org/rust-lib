@@ -101,12 +101,12 @@ pub fn run_current_state_function() -> ImplItem {
 
             // Runs until reaching a state that no longer says to continue.
             while let Some(next_state) = self.status.continue_as() {
-                self.logger.debug(||format!("Current character is {:?}.",reader.character().char));
-                self.logger.debug(||format!("Continuing in {:?}.",next_state));
+                debug!(self.logger,"Current character is {reader.character().char:?}.");
+                debug!(self.logger,"Continuing in {next_state:?}.");
                 self.status = self.step(next_state,reader);
 
                 if finished && reader.finished(self.bookmarks()) {
-                    self.logger.info("Input finished.");
+                    info!(self.logger,"Input finished.");
                     self.status = StageStatus::ExitFinished
                 }
                 finished = reader.character().is_eof();
@@ -115,27 +115,26 @@ pub fn run_current_state_function() -> ImplItem {
                     match reader.character().char {
                         Ok(char) => {
                             reader.append_result(char);
-                            self.logger.info(||format!("Result is {:?}.",reader.result()));
+                            info!(self.logger,"Result is {reader.result():?}.");
                         },
                         Err(enso_flexer::prelude::reader::Error::EOF) => {
-                            self.logger.info("Reached EOF.");
+                            info!(self.logger,"Reached EOF.");
                         },
                         Err(enso_flexer::prelude::reader::Error::EndOfGroup) => {
                             let current_state = self.current_state();
                             let group_name    = self.groups().group(current_state).name.as_str();
                             let err           = format!("Missing rules for state {}.", group_name);
-                            self.logger.error(err.as_str());
+                            error!(self.logger,|| err.as_str());
                             panic!(err)
                         }
                         Err(_) => {
-                            self.logger.error("Unexpected error!");
+                            error!(self.logger,"Unexpected error!");
                             panic!("Unexpected error!")
                         }
                     }
                     reader.advance_char(&mut self.bookmarks);
                 }
             }
-
             self.status
         }
     };

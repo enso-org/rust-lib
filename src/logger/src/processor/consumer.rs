@@ -1,8 +1,10 @@
 //! Log consumer implementation.
 
 pub mod js_console;
+pub mod native_console;
 
 pub use js_console::JsConsole;
+pub use native_console::NativeConsole;
 
 use crate::entry::Entry;
 
