@@ -25,6 +25,10 @@ mod js {
             }
         }
 
+        export function show_logs() {
+            window.showLogs()
+        }
+
         export function check_auto_flush() {
             return (console.autoFlush === true)
         }
@@ -32,6 +36,9 @@ mod js {
     extern "C" {
         #[allow(unsafe_code)]
         pub fn setup_logs_flush(closure:&Closure<dyn Fn()>);
+
+        #[allow(unsafe_code)]
+        pub fn show_logs();
 
         /// When the `showLogs` function is evaluated, the `autoFlush` flag is set to true. This
         /// may happen even before the WASM file is loaded, so it's worth checking whether it
@@ -48,7 +55,7 @@ mod js {
 // =================
 
 /// The most primitive building block of a logger. Processor takes some input and returns some
-/// output, forming a message processing seqline.
+/// output, forming a message processing pipeline.
 ///
 /// Processors can be chained together with the use of the `Seq` processor. They can perform both
 /// simple actions like formatting the logs or outputting them to console, as well as more complex
@@ -263,6 +270,10 @@ impl<Input,Next> Default for Buffer<Input,Next>
         let model   = Rc::new(RefCell::new(BufferModel::<Input,Next>::default()));
         let closure = Closure::new(f!(model.borrow_mut().flush_and_enable_auto_flush()));
         js::setup_logs_flush(&closure);
+        if cfg!(debug_assertions) {
+            println!("Debug mode. Logs will be enabled automatically.");
+            js::show_logs();
+        }
         Self{model,closure}
     }
 }
@@ -276,7 +287,7 @@ impl<Input,Next> Processor<Input> for Buffer<Input,Next>
     }
 }
 
-#[derive(Debug,Derivative)]
+#[derive(Debug)]
 #[allow(missing_docs)]
 pub struct BufferModel<Input,Next> {
     buffer     : Vec<Input>,
@@ -292,14 +303,7 @@ where Next:Processor<Input> {
         let auto_flush = js::check_auto_flush();
         let buffer     = default();
         let next       = default();
-        Self {buffer,auto_flush,next} . init()
-    }
-
-    fn init(mut self) -> Self {
-        if cfg!(debug_assertions) {
-            self.flush_and_enable_auto_flush()
-        }
-        self
+        Self {buffer,auto_flush,next}
     }
 
     /// Submit the input to the buffer or the subsequent processor in case the `auto_flush` is
@@ -424,8 +428,8 @@ define_global_processor! {
     DefaultGlobalJsProcessor =
         Buffer<Entry<DefaultLevels>,
             Seq <
-                Formatter<formatter::NativeConsole>,
-                Consumer<consumer::NativeConsole>
+                Formatter<formatter::JsConsole>,
+                Consumer<consumer::JsConsole>
             >
         >;
 }
