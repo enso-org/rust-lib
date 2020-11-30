@@ -84,6 +84,8 @@ where Processor:Default {
 /// A common interface for all loggers. Exposing all information needed to create a particular
 /// sub-logger from a given parent logger of any type.
 pub trait AnyLogger {
+    /// The owned type of this logger. As this trait is implemented for logger references, this
+    /// dependent type just removes the references in this case.
     type Owned;
 
     /// Constructor.
