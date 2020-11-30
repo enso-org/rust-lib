@@ -1,6 +1,6 @@
 [package]
 name    = "enso-logger"
-version = "0.1.3"
+version = "0.2.0"
 authors = ["Enso Team <contact@luna-lang.org>"]
 edition = "2018"
 
@@ -21,8 +21,8 @@ publish = true
 default = []
 
 [dependencies]
-enso-prelude = { path = "../prelude"      }
-enso-shapely = { path = "../shapely/impl" }
+enso-prelude = { version = "0.1.8", path = "../prelude"      }
+enso-shapely = { version = "0.1.2", path = "../shapely/impl" }
 wasm-bindgen = { version = "=0.2.58", features = ["nightly"]  }
 js-sys = { version = "0.3.28" }
 
