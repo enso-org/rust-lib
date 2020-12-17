@@ -11,17 +11,37 @@ use std::hash::BuildHasher;
 // === HashMapTree ===
 // ===================
 
-/// A tree build on top of the `HashMap`. Each node in the tree can have zero or more branches
-/// accessible by the given key type.
+/// The bounds needed on the key type for using the tree.
+pub trait KeyBounds = Clone + Eq + Hash + PartialEq;
+
+/// The type of branches in the tree.
+pub type Branches<K,V,S> = HashMap<K,HashMapTree<K,V,S>,S>;
+
+/// A tree built on top of a [`std::collections::HashMap`]. Each node in the tree can have zero or
+/// more branches accessible by the given key type.
 #[derive(Derivative)]
-#[derivative(Debug   (bound="K:Eq+Hash+Debug , V:Debug   , S:BuildHasher"))]
-#[derivative(Default (bound="K:Eq+Hash       , V:Default , S:BuildHasher+Default"))]
-#[derivative(Clone   (bound="K:Clone         , V:Clone   , S:Clone"))]
+#[derivative(Clone)]
+#[derivative(Debug    (bound = "K:Eq+Hash+Debug , V:Debug     , S:BuildHasher"))]
+#[derivative(Default  (bound = "K:Eq+Hash       , V:Default   , S:BuildHasher+Default"))]
+#[derivative(PartialEq(bound = "K:Eq+Hash       , V:PartialEq , S:BuildHasher"))]
+#[derivative(Eq       (bound = "K:Eq+Hash       , V:Eq        , S:BuildHasher"))]
 pub struct HashMapTree<K,V,S=RandomState> {
     /// Value of the current tree node.
     pub value : V,
     /// Branches of the current tree node.
-    pub branches : HashMap<K,HashMapTree<K,V,S>,S>
+    pub branches : Branches<K,V,S>
+}
+
+impl<K,T,S> HashMapTree<K,T,S> {
+    /// Check if `self` is a leaf of the tree.
+    pub fn is_leaf(&self) -> bool {
+        self.branches.is_empty()
+    }
+
+    /// Check if `self` is a non-leaf node in the tree.
+    pub fn is_non_leaf(&self) -> bool {
+        !self.is_leaf()
+    }
 }
 
 impl<K,T,S> HashMapTree<K,T,S>
@@ -243,6 +263,51 @@ where K:Eq+Hash {
     }
 }
 
+impl<K,V,S> HashMapTree<K,V,S>
+where K : KeyBounds,
+      S : BuildHasher+Default {
+    /// Map the provided `f` over `self`, mutating the tree.
+    ///
+    /// This may change the value type stored in the tree.
+    ///
+    /// ## NOTE
+    /// This function is only suitable for use on trees with small depths as it is implemented in a
+    /// recursive fashion.
+    pub fn map<R,F>(self, f:F) -> HashMapTree<K,R,S>
+        where F : Copy + Fn(V) -> R {
+        let value = f(self.value);
+        let branches_iter = self.branches.into_iter().map(|(k,v)| (k,v.map(f)));
+        let branches = branches_iter.collect();
+        HashMapTree{value,branches}
+    }
+
+    /// Drop all values from the tree, replacing them with unit.
+    ///
+    /// ## NOTE
+    /// This function is only suitable for use on trees with small depths as it is implemented in a
+    /// recursive fashion.
+    pub fn drop_values(self) -> HashMapTree<K,(),S> {
+        self.map(|_| ())
+    }
+}
+
+impl<K,V,S> HashMapTree<K,V,S>
+    where K : KeyBounds,
+          V : Default,
+          S : BuildHasher+Default {
+    /// Map the provided `f` over `self`, mutating the tree in place.
+    ///
+    /// ## NOTE
+    /// This function is only suitable for use on trees with small depths as it is implemented in a
+    /// recursive fashion.
+    pub fn map_in_place<F>(&mut self, f:F)
+        where F : Copy + Fn(&mut V) -> () {
+        f(&mut self.value);
+        for value in self.branches.values_mut() {
+            value.map_in_place(f);
+        }
+    }
+}
 
 // === Impls ===
 
@@ -328,4 +393,74 @@ define_borrow_iterator!(IterMut iter_mut mut);
 // === Tests ===
 // =============
 
-// TODO: We should have tests here.
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn single_insert_get() {
+        let value = "String";
+        let path = vec![1, 2, 4, 3];
+        let mut tree = HashTree::<i32, String>::empty();
+        tree.insert(path.clone(), value.to_string());
+        let obtained_val = tree.get_value(path);
+        assert!(obtained_val.is_some());
+        assert_eq!(obtained_val.unwrap().as_str(), value);
+    }
+
+    #[test]
+    fn multi_insert_get() {
+        let mut tree = HashTree::<i32, i32>::empty();
+        let values = vec![1, 2, 3, 4, 5];
+        let paths = vec![vec![1, 2], vec![2, 2, 1, 3], vec![1, 3], vec![1, 2, 4, 1], vec![1, 3, 1]];
+        for (val, path) in values.iter().zip(&paths) {
+            tree.insert(path.clone(), *val)
+        }
+        for (val, path) in values.iter().zip(&paths) {
+            let obtained_val = tree.get_value(path.clone());
+            assert!(obtained_val.is_some());
+            assert_eq!(obtained_val.unwrap(), val)
+        }
+    }
+
+    #[test]
+    fn is_leaf() {
+        let tree_1 = HashTree::<i32, i32>::singleton(1);
+        let tree_2 = HashTree::<i32, i32>::empty();
+        let mut tree_3 = HashTree::<i32, i32>::empty();
+        tree_3.insert(vec![1], 1);
+        assert!(tree_1.is_leaf());
+        assert!(tree_2.is_leaf());
+        assert!(tree_3.is_non_leaf());
+    }
+
+    #[test]
+    fn map() {
+        let mut tree = HashTree::<i32, i32>::empty();
+        let values = vec![1, 2, 3, 4, 5];
+        let paths = vec![vec![1, 2], vec![2, 2, 1, 3], vec![1, 3], vec![1, 2, 4, 1], vec![1, 3, 1]];
+        for (val, path) in values.iter().zip(&paths) {
+            tree.insert(path.clone(), *val)
+        }
+        let new_tree = tree.map(|v| format!("{}", v));
+        for (val, path) in values.iter().zip(&paths) {
+            let output = new_tree.get_value(path.clone()).unwrap().clone();
+            assert_eq!(output, val.to_string());
+        }
+    }
+
+    #[test]
+    fn map_in_place() {
+        let mut tree = HashTree::<i32, i32>::empty();
+        let values = vec![1, 2, 3, 4, 5];
+        let paths = vec![vec![1, 2], vec![2, 2, 1, 3], vec![1, 3], vec![1, 2, 4, 1], vec![1, 3, 1]];
+        for (val, path) in values.iter().zip(&paths) {
+            tree.insert(path.clone(), *val)
+        }
+        tree.map_in_place(|v| (*v) * 2);
+        for (val, path) in values.iter().zip(&paths) {
+            let output = tree.get_value(path.clone()).unwrap().clone();
+            assert_eq!(output, val * 2);
+        }
+    }
+}
