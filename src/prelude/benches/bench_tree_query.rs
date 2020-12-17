@@ -1,5 +1,4 @@
-//! This file contains benchmarks of the query performance for the tree structure used in the macro
-//! resolver.
+//! This file contains benchmarks of the query performance for the HashTree structure.
 
 use enso_prelude::HashTree;
 use itertools::*;
