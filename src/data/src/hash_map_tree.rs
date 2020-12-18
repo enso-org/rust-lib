@@ -364,10 +364,11 @@ macro_rules! define_borrow_iterator {
 define_borrow_iterator!(Iter iter);
 define_borrow_iterator!(IterMut iter_mut mut);
 
-impl<K,V> FromIterator<(Vec<K>,V)> for HashMapTree<K,V>
+impl<K,V,S> FromIterator<(Vec<K>,V)> for HashMapTree<K,V,S>
 where K : Eq + Hash,
-      V : Default {
-    fn from_iter<T: IntoIterator<Item=(Vec<K>,V)>>(iter:T) -> Self {
+      V : Default,
+      S : BuildHasher + Default {
+    fn from_iter<T: IntoIterator<Item=(Vec<K>,V)>>(iter: T) -> Self {
         let mut new_tree = HashMapTree::new();
         for (path, val) in iter {
             new_tree.set(path,val);
@@ -431,7 +432,7 @@ mod tests {
         for (val, path) in values.iter().zip(&paths) {
             tree.set(path.clone(), *val)
         }
-        let new_tree:HashMapTree<_,_,_> = tree.iter().map(|(p,v)| (p,format!("{}",v))).collect();
+        let new_tree:HashMapTree<_,_,RandomState> = tree.iter().map(|(p,v)| (p,format!("{}",v))).collect();
         for (val, path) in values.iter().zip(&paths) {
             let path   = path.clone();
             let output = new_tree.get(path.iter()).unwrap().clone();
