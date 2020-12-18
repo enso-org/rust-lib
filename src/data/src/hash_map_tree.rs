@@ -14,7 +14,7 @@ use std::hash::BuildHasher;
 pub trait KeyBounds = Clone + Eq + Hash + PartialEq;
 
 /// The type of branches in the tree.
-pub type Branches<K, V, S> = HashMap<K, HashMapTree<K, V, S>, S>;
+pub type Branches<K,V,S> = HashMap<K,HashMapTree<K,V,S>,S>;
 
 /// A tree built on top of a [`std::collections::HashMap`]. Each node in the tree can have zero or
 /// more branches accessible by the given key type.
@@ -210,7 +210,7 @@ where K : Eq+Hash,
     /// Zips two trees together into a new tree with cloned values.
     #[inline]
     pub fn zip_clone<T2>
-    (&self, other: &HashMapTree<K,T2,S>) -> HashMapTree<K,AtLeastOneOfTwo<T,T2>,S>
+    (&self, other:&HashMapTree<K,T2,S>) -> HashMapTree<K,AtLeastOneOfTwo<T,T2>,S>
     where K:Clone, T:Clone, T2:Clone {
         Self::zip_clone_branches(Some(self),Some(other))
     }
@@ -270,7 +270,7 @@ where K:Eq+Hash {
 
     /// Gets the current value or creates new one if missing.
     pub fn value_or_set_with<F>(&mut self, cons:F) -> &mut T
-        where F: FnOnce() -> T {
+    where F:FnOnce()->T {
         if self.value.is_none() {
             self.value = Some(cons());
         };
@@ -295,7 +295,7 @@ impl<K,V,S> PartialSemigroup<&HashMapTree<K,V,S>> for HashMapTree<K,V,S>
 where K : Eq+Hash+Clone,
       V : Semigroup,
       S : BuildHasher+Clone {
-    fn concat_mut(&mut self, other: &Self) {
+    fn concat_mut(&mut self, other:&Self) {
         self.value.concat_mut(&other.value);
         PartialSemigroup::concat_mut(&mut self.branches,&other.branches);
     }

@@ -38,6 +38,7 @@ fn gen_tree(width:usize, depth:usize) -> HashTree<usize,usize> {
 // === Benchmarks ===
 // ==================
 
+
 // === Query ===
 
 /// A benchmark that tests querying a tree that has 10 branches at each node, and each node chain
@@ -45,9 +46,7 @@ fn gen_tree(width:usize, depth:usize) -> HashTree<usize,usize> {
 fn wide_tree(c:&mut Criterion) {
     let tree             = gen_tree(10,5);
     let query:Vec<usize> = vec![1,3,2,5,9];
-    c.bench_function("Wide Tree",|b| b.iter(|| {
-        tree.get_value(black_box(query.clone()))
-    }));
+    c.bench_function("Wide Tree",|b| b.iter(|| tree.get_value(black_box(query.clone()))));
 }
 
 /// A benchmark that tests querying a tree that has 5 branches at each node, and each node chain
@@ -55,9 +54,7 @@ fn wide_tree(c:&mut Criterion) {
 fn deep_tree(c:&mut Criterion) {
     let tree             = gen_tree(5,10);
     let query:Vec<usize> = vec![1,2,4,1,3];
-    c.bench_function("Deep Tree",|b| b.iter(|| {
-        tree.get_value(black_box(query.clone()))
-    }));
+    c.bench_function("Deep Tree",|b| b.iter(|| tree.get_value(black_box(query.clone()))));
 }
 
 criterion_group! {
@@ -71,9 +68,7 @@ criterion_group! {
 
 fn clone(c:&mut Criterion) {
     let tree = gen_tree(10,5);
-    c.bench_function("Clone",|b| b.iter(|| {
-        black_box(tree.clone());
-    }));
+    c.bench_function("Clone",|b| b.iter(|| black_box(tree.clone())));
 }
 
 fn map(c:&mut Criterion) {
@@ -97,6 +92,8 @@ criterion_group! {
     config  = bench_config();
     targets = clone,map,map_in_place
 }
+
+
 
 // ==============
 // === Runner ===
