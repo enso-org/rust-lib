@@ -319,7 +319,7 @@ macro_rules! define_borrow_iterator {
                 if let Some(root_item) = mem::take(&mut self.root_item) {
                     Some((self.path.clone(),root_item))
                 } else {
-                    let result = loop {
+                    loop {
                         match self.iters.pop() {
                             None => break None,
                             Some(mut iter) => {
@@ -334,8 +334,7 @@ macro_rules! define_borrow_iterator {
                                 }
                             }
                         }
-                    };
-                    result
+                    }
                 }
             }
         }
