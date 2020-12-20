@@ -19,6 +19,7 @@ mod phantom;
 mod rc;
 mod reference;
 mod result;
+mod smallvec;
 mod std_reexports;
 mod string;
 mod switch;
@@ -31,6 +32,7 @@ pub use clone::*;
 pub use collections::*;
 pub use data::*;
 pub use macros::*;
+pub use crate::smallvec::*;
 pub use option::*;
 pub use phantom::*;
 pub use rc::*;
@@ -336,29 +338,5 @@ impl<T:?Sized> WeakRef for Weak<T> {
     type StrongRef = Rc<T>;
     fn upgrade(&self) -> Option<Self::StrongRef> {
         Weak::upgrade(self)
-    }
-}
-
-
-
-// ==================
-// === Result Ops ===
-// ==================
-
-/// Allows extracting the element from `Result<T,T>` for any `T`.
-#[allow(missing_docs)]
-pub trait ResultGet {
-    type Item;
-    /// Allows extracting the element from `Result<T,T>` for any `T`.
-    fn unwrap_both(self) -> Self::Item;
-}
-
-impl<T> ResultGet for Result<T,T> {
-    type Item = T;
-    fn unwrap_both(self) -> T {
-        match self {
-            Ok  (t) => t,
-            Err (t) => t,
-        }
     }
 }
