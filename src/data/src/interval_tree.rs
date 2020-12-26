@@ -280,3 +280,28 @@ mod tests {
         v.insert(11) ; assert_eq!(v.vec,raw(&[(10,14)]));
     }
 }
+
+
+extern crate test;
+
+#[cfg(test)]
+mod benches {
+    use super::*;
+    use test::Bencher;
+
+    /// # Results
+    /// 10^4 -> 0.18 ms
+    /// 10^5 -> 2.3 ms
+    /// 10^6 -> 30 ms
+    /// 10^7 -> 420 ms
+    /// 10^8 -> 2.2 s
+    #[bench]
+    fn bench_insert_ascending(b:&mut Bencher) {
+        b.iter(|| {
+            let mut v = IntervalTree::new();
+            for i in 0 .. 1000_000_00 {
+                v.insert(i*2);
+            }
+        });
+    }
+}
