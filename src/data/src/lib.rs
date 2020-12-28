@@ -4,6 +4,8 @@
 #![feature(trait_alias)]
 #![feature(test)]
 
+#![feature(set_stdio)]
+
 #![warn(unsafe_code)]
 #![warn(missing_copy_implementations)]
 #![warn(missing_debug_implementations)]
