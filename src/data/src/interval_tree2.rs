@@ -44,12 +44,12 @@ impl From<(usize,usize)> for Interval {
     }
 }
 
-const DATA_SIZE : usize = 1024;
-type DataType = [Interval;1024];
-type DataTypeUninit = [MaybeUninit<Interval>;1024];
-const CHILDREN_SIZE : usize = 1025;
-type ChildrenType = [Tree;1025];
-type ChildrenTypeUninit = [MaybeUninit<Tree>;1025];
+const DATA_SIZE : usize = 4;
+type DataType = [Interval;4];
+type DataTypeUninit = [MaybeUninit<Interval>;4];
+const CHILDREN_SIZE : usize = 5;
+type ChildrenType = [Tree;5];
+type ChildrenTypeUninit = [MaybeUninit<Tree>;5];
 
 
 
@@ -219,6 +219,8 @@ impl Tree {
     }
 
     pub fn insert(&mut self, t:usize) {
+        println!("--- insert");
+
         if let Some((median,left,right)) = self.insert_internal(t) {
             let mut new_root = Tree::default();
             new_root.data_count = 1;
@@ -231,11 +233,20 @@ impl Tree {
     }
 
     pub fn insert_internal(&mut self, t:usize) -> Option<(Interval,Tree,Tree)> {
+        println!("--- insert_internal");
+
+        let pos = self.search(t);
+
+        println!("POS: {:?}",pos);
+
         match self.search(t) {
             Err(pos) => {
                 match &mut self.children {
                     None => {
+                        println!("--- 0");
+
                         if self.data_count < DATA_SIZE {
+                            println!("--- 1");
                             // Insert Case (1)
                             self.data[pos..].rotate_right(1);
                             self.data[pos] = Interval(t,t);
@@ -272,6 +283,9 @@ impl Tree {
                                 self.data_count += 1;
                                 None
                             } else {
+
+                                //zakomentowanie tego brancha usuwa stackoverflow, mimmo ze tu nigdy niewchodzimy
+
                                 let median_index = DATA_SIZE / 2;
                                 let data  = &mut self.data;
 
@@ -685,262 +699,269 @@ macro_rules! l {
 mod tests {
     use super::*;
 
+    // use std::os::unix::io::FromRawFd;
+    // use std::fs::File;
+    // #[test]
+    // fn ttt() {
+    //     let stdout = unsafe { File::from_raw_fd(1) };
+    //     std::io::set_print(Some(Box::new(stdout)));
+    //     // let mut v = Tree::default();
+    //     // for i in 0 .. 100_0 {
+    //     //     v.insert(i*2);
+    //     // }
+    //     // println!("{:?}",v);
+    //     println!("hello1");
+    //     let mut v = Tree::default();
+    //     println!("hello2");
+    //     v.insert(1);
+    // }
+    fn intervals(bounds:&[(usize,usize)]) -> Vec<Interval> {
+        bounds.iter().copied().map(|(a,b)|Interval(a,b)).collect()
+    }
+
+    fn check(tree:&Tree, bounds:&[(usize,usize)]) {
+        assert_eq!(tree.to_vec(),intervals(bounds));
+    }
 
     #[test]
-    fn ttt() {
+    fn leaf_insertion() {
         let mut v = Tree::default();
-        for i in 0 .. 100_0 {
-            v.insert(i*2);
-        }
-        println!("{:?}",v);
+        check(&v,&[]);
+        v.insert(1) ; check(&v,&[(1,1)]);
+        v.insert(3) ; check(&v,&[(1,1),(3,3)]);
+        v.insert(5) ; check(&v,&[(1,1),(3,3),(5,5)]);
+        v.insert(6) ; check(&v,&[(1,1),(3,3),(5,6)]);
+        v.insert(2) ; check(&v,&[(1,3),(5,6)]);
+        v.insert(4) ; check(&v,&[(1,6)]);
     }
-//     fn intervals(bounds:&[(usize,usize)]) -> Vec<Interval> {
-//         bounds.iter().copied().map(|(a,b)|Interval(a,b)).collect()
-//     }
-//
-//     fn check(tree:&Tree, bounds:&[(usize,usize)]) {
-//         assert_eq!(tree.to_vec(),intervals(bounds));
-//     }
-//
-//     #[test]
-//     fn leaf_insertion() {
-//         let mut v = Tree::default();
-//         check(&v,&[]);
-//         v.insert(1) ; check(&v,&[(1,1)]);
-//         v.insert(3) ; check(&v,&[(1,1),(3,3)]);
-//         v.insert(5) ; check(&v,&[(1,1),(3,3),(5,5)]);
-//         v.insert(6) ; check(&v,&[(1,1),(3,3),(5,6)]);
-//         v.insert(2) ; check(&v,&[(1,3),(5,6)]);
-//         v.insert(4) ; check(&v,&[(1,6)]);
-//     }
-//
-//     #[test]
-//     fn deep_insertion() {
-//         let mut v = Tree::default();
-//         check(&v,&[]);
-//         v.insert(10)  ; check(&v,&[(10,10)]);
-//         v.insert(30)  ; check(&v,&[(10,10),(30,30)]);
-//         v.insert(50)  ; check(&v,&[(10,10),(30,30),(50,50)]);
-//         v.insert(70)  ; assert_eq!(v,t!(10,30,50,70));
-//         v.insert(90)  ; assert_eq!(v,t!( t!(10,30), 50, t!(70,90) ));
-//         v.insert(110) ; assert_eq!(v,t!( t!(10,30), 50, t!(70,90,110) ));
-//         v.insert(130) ; assert_eq!(v,t!( t!(10,30), 50, t!(70,90,110,130) ));
-//         v.insert(150) ; assert_eq!(v,t!( t!(10,30), 50, t!(70,90), 110, t!(130,150) ));
-//         v.insert(72)  ; assert_eq!(v,t!( t!(10,30), 50, t!(70,72,90), 110, t!(130,150) ));
-//         v.insert(74)  ; assert_eq!(v,t!( t!(10,30), 50, t!(70,72,74,90), 110, t!(130,150) ));
-//         v.insert(76)  ; assert_eq!(v,t!( t!(10,30), 50, t!(70,72), 74, t!(76,90), 110, t!(130,150) ));
-//         v.insert(32)  ; assert_eq!(v,t!( t!(10,30,32), 50, t!(70,72), 74, t!(76,90), 110, t!(130,150) ));
-//         v.insert(34)  ; assert_eq!(v,t!( t!(10,30,32,34), 50, t!(70,72), 74, t!(76,90), 110, t!(130,150) ));
-//         v.insert(36)  ; assert_eq!(v,t!( t!(10,30), 32, t!(34,36), 50, t!(70,72), 74, t!(76,90), 110, t!(130,150) ));
-//         v.insert(52)  ; assert_eq!(v,t!( t!(10,30), 32, t!(34,36), 50, t!(52,70,72), 74, t!(76,90), 110, t!(130,150) ));
-//         v.insert(54)  ; assert_eq!(v,t!( t!(10,30), 32, t!(34,36), 50, t!(52,54,70,72), 74, t!(76,90), 110, t!(130,150) ));
-//     }
-//
-//     #[test]
-//     fn insert_case_1() {
-//         let mut v = t!(10,20) ; v.insert(0)  ; assert_eq!(v,t!(0,10,20));
-//         let mut v = t!(10,20) ; v.insert(15) ; assert_eq!(v,t!(10,15,20));
-//         let mut v = t!(10,20) ; v.insert(30) ; assert_eq!(v,t!(10,20,30));
-//     }
-//
-//     #[test]
-//     fn insert_case_2() {
-//         let mut v1 = t!(t!(10,20,30,40),50,t!(60,70,80,90));
-//         let mut v2 = v1.clone();
-//         v1.insert(25) ; assert_eq!(v1,t!(t!(10,20),25,t!(30,40),50,t!(60,70,80,90)));
-//         v2.insert(75) ; assert_eq!(v2,t!(t!(10,20,30,40),50,t!(60,70),75,t!(80,90)));
-//     }
-//
-//     #[test]
-//     fn insert_case_3() {
-//         let mut v1 = t!(t!(10,20,30,40),50,t!(60,70,80,90));
-//         let mut v2 = v1.clone();
-//         v1.insert(15) ; assert_eq!(v1,t!(t!(10,15),20,t!(30,40),50,t!(60,70,80,90)));
-//         v2.insert(0)  ; assert_eq!(v2,t!(t!(0,10) ,20,t!(30,40),50,t!(60,70,80,90)));
-//     }
-//
-//     #[test]
-//     fn insert_case_4() {
-//         let mut v1 = t!(t!(10,20,30,40),50,t!(60,70,80,90));
-//         let mut v2 = v1.clone();
-//         v1.insert(35) ; assert_eq!(v1,t!(t!(10,20),30,t!(35,40),50,t!(60,70,80,90)));
-//         v2.insert(45) ; assert_eq!(v2,t!(t!(10,20),30,t!(40,45),50,t!(60,70,80,90)));
-//     }
-//
-//     #[test]
-//     fn insert_case_5() {
-//         let mut v = t!(t!(10), 20, t!(30), 40, t!(50,52,54,56), 60, t!(70), 80, t!(90));
-//         v.insert(58);
-//         assert_eq!(v,t!(t!(t!(10),20,t!(30),40,t!(50,52)), 54, t!(t!(56,58),60,t!(70),80,t!(90))));
-//     }
-//
-//     #[test]
-//     fn insert_case_6() {
-//         // let mut v = t!(t!(10,12,14,16), 20, t!(30), 40, t!(50), 60, t!(70), 80, t!(90));
-//         // v.insert(18);
-//         // assert_eq!(v,t!(t!(10,12), 14, t!(t!(16,18),20,t!(36),40,t!(50),60,t!(70),80,t!(90))));
-//         // Left:  t!(t!(t!(10,12,14,16),(20,20),t!((10,10),(12,12))),(40,40),t!(t!((16,16),(18,18)),(40,40),t!((50,50)),(60,60),t!((70,70)),(80,80),t!((90,90))))
-//
-//
-//         let mut v = t!(t!(10), 20, t!(30,32,34,36), 40, t!(50), 60, t!(70), 80, t!(90));
-//         v.insert(38);
-//         assert_eq!(v,t!(t!(t!(10),20,t!(30,32)), 34, t!(t!(36,38),40,t!(50),60,t!(70),80,t!(90))));
-//     }
-//
-//     #[test]
-//     fn insert_case_7() {
-//         let mut v = t!(t!(10), 20, t!(30), 40, t!(50), 60, t!(70,72,74,76), 80, t!(90));
-//         v.insert(78);
-//         assert_eq!(v,
-//             t!(
-//                 t!(
-//                     t!(10),
-//                     20,
-//                     t!(30),
-//                     40,
-//                     t!(50)
-//                 ),
-//                 60,
-//                 t!(
-//                     t!(70,72),
-//                     74,
-//                     t!(76,78),
-//                     80,
-//                     t!(90)
-//                 )
-//             )
-//         );
-//
-//         let mut v = t!(t!(10), 20, t!(30), 40, t!(50), 60, t!(70), 80, t!(90,92,94,96));
-//         v.insert(98);
-//         assert_eq!(v,
-//             t!(
-//                 t!(
-//                     t!(10),
-//                     20,
-//                     t!(30),
-//                     40,
-//                     t!(50)
-//                 ),
-//                 60,
-//                 t!(
-//                     t!(70),
-//                     80,
-//                     t!(90,92),
-//                     94,
-//                     t!(96,98)
-//                 )
-//             )
-//         );
-//     }
-//
-//     #[test]
-//     fn insert_deep_bubble() {
-//         let mut v =
-//             t!(
-//                 t!(100),
-//                 200,
-//                 t!(300),
-//                 400,
-//                 t!(
-//                     t!(500),
-//                     510,
-//                     t!(520),
-//                     530,
-//                     t!(540,542,544,546),
-//                     550,
-//                     t!(560),
-//                     570,
-//                     t!(580)
-//                 ),
-//                 600,
-//                 t!(700),
-//                 800,
-//                 t!(900)
-//             );
-//         v.insert(548);
-//         assert_eq!(v,
-//             t!(
-//                 t!(
-//                     t!(100),
-//                     200,
-//                     t!(300),
-//                     400,
-//                     t!(
-//                         t!(500),
-//                         510,
-//                         t!(520),
-//                         530,
-//                         t!(540,542)
-//                     )
-//                 ),
-//                 544,
-//                 t!(
-//                     t!(
-//                         t!(546,548),
-//                         550,
-//                         t!(560),
-//                         570,
-//                         t!(580)
-//                     ),
-//                     600,
-//                     t!(700),
-//                     800,
-//                     t!(900)
-//                 )
-//             )
-//         )
-//     }
-//
-//     // #[test]
-//     // fn delete_case_1() {
-//     //     let mut v = l!((10,11),20,30) ; v.delete(11) ; assert_eq!(v,t!(10,20,30));
-//     //     let mut v = t!(10,20,30) ; v.delete(10) ; assert_eq!(v,t!(20,30));
-//     //     let mut v = t!(10,20,30) ; v.delete(20) ; assert_eq!(v,t!(10,30));
-//     //     let mut v = t!(10,20,30) ; v.delete(30) ; assert_eq!(v,t!(10,20));
-//     //     let mut v = t!(10,20)    ; v.delete(10) ; assert_eq!(v,t!(20));
-//     //     let mut v = t!(10,20)    ; v.delete(20) ; assert_eq!(v,t!(10));
-//     //     let mut v = t!(10)       ; v.delete(10) ; assert_eq!(v,t!::default());
-//     // }
-//
-//     #[test]
-//     fn delete_case_X() {
-//         let mut v = t!(10,20,30) ; v.delete(0)  ; assert_eq!(v,t!(10,20,30));
-//         let mut v = t!(10,20,30) ; v.delete(15) ; assert_eq!(v,t!(10,20,30));
-//         let mut v = t!(10,20,30) ; v.delete(25) ; assert_eq!(v,t!(10,20,30));
-//         let mut v = t!(10,20,30) ; v.delete(35) ; assert_eq!(v,t!(10,20,30));
-//     }
-//
-//
-//     #[test]
-//     fn unsafe_take_smallest_no_rebalance() {
-//         let mut v = t!(10,20);
-//         assert_eq!(v.unsafe_take_smallest_no_rebalance(),(Interval(10,10),false));
-//         assert_eq!(v,t!(20));
-//         assert_eq!(v.unsafe_take_smallest_no_rebalance(),(Interval(20,20),true));
-//         assert_eq!(v,Tree::default());
-//
-//         let mut v = t!(t!(10,12), 20, t!(30), 40, t!(50), 60, t!(70), 80, t!(90));
-//         assert_eq!(v.unsafe_take_smallest_no_rebalance(),(Interval(10,10),false));
-//         assert_eq!(v,t!(t!(12), 20, t!(30), 40, t!(50), 60, t!(70), 80, t!(90)));
-//         assert_eq!(v.unsafe_take_smallest_no_rebalance(),(Interval(12,12),true));
-//         assert_eq!(v,t!(Tree::default(), 20, t!(30), 40, t!(50), 60, t!(70), 80, t!(90)));
-//     }
-//
-//     #[test]
-//     fn unsafe_take_greatest_no_rebalance() {
-//         let mut v = t!(10,20);
-//         assert_eq!(v.unsafe_take_greatest_no_rebalance(),(Interval(20,20),false));
-//         assert_eq!(v,t!(10));
-//         assert_eq!(v.unsafe_take_greatest_no_rebalance(),(Interval(10,10),true));
-//         assert_eq!(v,Tree::default());
-//
-//         let mut v = t!(t!(10), 20, t!(30), 40, t!(50), 60, t!(70), 80, t!(90,92));
-//         assert_eq!(v.unsafe_take_greatest_no_rebalance(),(Interval(92,92),false));
-//         assert_eq!(v,t!(t!(10), 20, t!(30), 40, t!(50), 60, t!(70), 80, t!(90)));
-//         assert_eq!(v.unsafe_take_greatest_no_rebalance(),(Interval(90,90),true));
-//         assert_eq!(v,t!(t!(10), 20, t!(30), 40, t!(50), 60, t!(70), 80, Tree::default()));
-//     }
+
+    #[test]
+    fn deep_insertion() {
+        let mut v = Tree::default();
+        check(&v,&[]);
+        v.insert(10)  ; check(&v,&[(10,10)]);
+        v.insert(30)  ; check(&v,&[(10,10),(30,30)]);
+        v.insert(50)  ; check(&v,&[(10,10),(30,30),(50,50)]);
+        v.insert(70)  ; assert_eq!(v,t!(10,30,50,70));
+        v.insert(90)  ; assert_eq!(v,t!( t!(10,30), 50, t!(70,90) ));
+        v.insert(110) ; assert_eq!(v,t!( t!(10,30), 50, t!(70,90,110) ));
+        v.insert(130) ; assert_eq!(v,t!( t!(10,30), 50, t!(70,90,110,130) ));
+        v.insert(150) ; assert_eq!(v,t!( t!(10,30), 50, t!(70,90), 110, t!(130,150) ));
+        v.insert(72)  ; assert_eq!(v,t!( t!(10,30), 50, t!(70,72,90), 110, t!(130,150) ));
+        v.insert(74)  ; assert_eq!(v,t!( t!(10,30), 50, t!(70,72,74,90), 110, t!(130,150) ));
+        v.insert(76)  ; assert_eq!(v,t!( t!(10,30), 50, t!(70,72), 74, t!(76,90), 110, t!(130,150) ));
+        v.insert(32)  ; assert_eq!(v,t!( t!(10,30,32), 50, t!(70,72), 74, t!(76,90), 110, t!(130,150) ));
+        v.insert(34)  ; assert_eq!(v,t!( t!(10,30,32,34), 50, t!(70,72), 74, t!(76,90), 110, t!(130,150) ));
+        v.insert(36)  ; assert_eq!(v,t!( t!(10,30), 32, t!(34,36), 50, t!(70,72), 74, t!(76,90), 110, t!(130,150) ));
+        v.insert(52)  ; assert_eq!(v,t!( t!(10,30), 32, t!(34,36), 50, t!(52,70,72), 74, t!(76,90), 110, t!(130,150) ));
+        v.insert(54)  ; assert_eq!(v,t!( t!(10,30), 32, t!(34,36), 50, t!(52,54,70,72), 74, t!(76,90), 110, t!(130,150) ));
+    }
+
+    #[test]
+    fn insert_case_1() {
+        let mut v = t!(10,20) ; v.insert(0)  ; assert_eq!(v,t!(0,10,20));
+        let mut v = t!(10,20) ; v.insert(15) ; assert_eq!(v,t!(10,15,20));
+        let mut v = t!(10,20) ; v.insert(30) ; assert_eq!(v,t!(10,20,30));
+    }
+
+    #[test]
+    fn insert_case_2() {
+        let mut v1 = t!(t!(10,20,30,40),50,t!(60,70,80,90));
+        let mut v2 = v1.clone();
+        v1.insert(25) ; assert_eq!(v1,t!(t!(10,20),25,t!(30,40),50,t!(60,70,80,90)));
+        v2.insert(75) ; assert_eq!(v2,t!(t!(10,20,30,40),50,t!(60,70),75,t!(80,90)));
+    }
+
+    #[test]
+    fn insert_case_3() {
+        let mut v1 = t!(t!(10,20,30,40),50,t!(60,70,80,90));
+        let mut v2 = v1.clone();
+        v1.insert(15) ; assert_eq!(v1,t!(t!(10,15),20,t!(30,40),50,t!(60,70,80,90)));
+        v2.insert(0)  ; assert_eq!(v2,t!(t!(0,10) ,20,t!(30,40),50,t!(60,70,80,90)));
+    }
+
+    #[test]
+    fn insert_case_4() {
+        let mut v1 = t!(t!(10,20,30,40),50,t!(60,70,80,90));
+        let mut v2 = v1.clone();
+        v1.insert(35) ; assert_eq!(v1,t!(t!(10,20),30,t!(35,40),50,t!(60,70,80,90)));
+        v2.insert(45) ; assert_eq!(v2,t!(t!(10,20),30,t!(40,45),50,t!(60,70,80,90)));
+    }
+
+    #[test]
+    fn insert_case_5() {
+        let mut v = t!(t!(10), 20, t!(30), 40, t!(50,52,54,56), 60, t!(70), 80, t!(90));
+        v.insert(58);
+        assert_eq!(v,t!(t!(t!(10),20,t!(30),40,t!(50,52)), 54, t!(t!(56,58),60,t!(70),80,t!(90))));
+    }
+
+    #[test]
+    fn insert_case_6() {
+        // let mut v = t!(t!(10,12,14,16), 20, t!(30), 40, t!(50), 60, t!(70), 80, t!(90));
+        // v.insert(18);
+        // assert_eq!(v,t!(t!(10,12), 14, t!(t!(16,18),20,t!(36),40,t!(50),60,t!(70),80,t!(90))));
+        // Left:  t!(t!(t!(10,12,14,16),(20,20),t!((10,10),(12,12))),(40,40),t!(t!((16,16),(18,18)),(40,40),t!((50,50)),(60,60),t!((70,70)),(80,80),t!((90,90))))
+
+
+        let mut v = t!(t!(10), 20, t!(30,32,34,36), 40, t!(50), 60, t!(70), 80, t!(90));
+        v.insert(38);
+        assert_eq!(v,t!(t!(t!(10),20,t!(30,32)), 34, t!(t!(36,38),40,t!(50),60,t!(70),80,t!(90))));
+    }
+
+    #[test]
+    fn insert_case_7() {
+        let mut v = t!(t!(10), 20, t!(30), 40, t!(50), 60, t!(70,72,74,76), 80, t!(90));
+        v.insert(78);
+        assert_eq!(v,
+            t!(
+                t!(
+                    t!(10),
+                    20,
+                    t!(30),
+                    40,
+                    t!(50)
+                ),
+                60,
+                t!(
+                    t!(70,72),
+                    74,
+                    t!(76,78),
+                    80,
+                    t!(90)
+                )
+            )
+        );
+
+        let mut v = t!(t!(10), 20, t!(30), 40, t!(50), 60, t!(70), 80, t!(90,92,94,96));
+        v.insert(98);
+        assert_eq!(v,
+            t!(
+                t!(
+                    t!(10),
+                    20,
+                    t!(30),
+                    40,
+                    t!(50)
+                ),
+                60,
+                t!(
+                    t!(70),
+                    80,
+                    t!(90,92),
+                    94,
+                    t!(96,98)
+                )
+            )
+        );
+    }
+
+    #[test]
+    fn insert_deep_bubble() {
+        let mut v =
+            t!(
+                t!(100),
+                200,
+                t!(300),
+                400,
+                t!(
+                    t!(500),
+                    510,
+                    t!(520),
+                    530,
+                    t!(540,542,544,546),
+                    550,
+                    t!(560),
+                    570,
+                    t!(580)
+                ),
+                600,
+                t!(700),
+                800,
+                t!(900)
+            );
+        v.insert(548);
+        assert_eq!(v,
+            t!(
+                t!(
+                    t!(100),
+                    200,
+                    t!(300),
+                    400,
+                    t!(
+                        t!(500),
+                        510,
+                        t!(520),
+                        530,
+                        t!(540,542)
+                    )
+                ),
+                544,
+                t!(
+                    t!(
+                        t!(546,548),
+                        550,
+                        t!(560),
+                        570,
+                        t!(580)
+                    ),
+                    600,
+                    t!(700),
+                    800,
+                    t!(900)
+                )
+            )
+        )
+    }
+
+    // #[test]
+    // fn delete_case_1() {
+    //     let mut v = l!((10,11),20,30) ; v.delete(11) ; assert_eq!(v,t!(10,20,30));
+    //     let mut v = t!(10,20,30) ; v.delete(10) ; assert_eq!(v,t!(20,30));
+    //     let mut v = t!(10,20,30) ; v.delete(20) ; assert_eq!(v,t!(10,30));
+    //     let mut v = t!(10,20,30) ; v.delete(30) ; assert_eq!(v,t!(10,20));
+    //     let mut v = t!(10,20)    ; v.delete(10) ; assert_eq!(v,t!(20));
+    //     let mut v = t!(10,20)    ; v.delete(20) ; assert_eq!(v,t!(10));
+    //     let mut v = t!(10)       ; v.delete(10) ; assert_eq!(v,t!::default());
+    // }
+
+    #[test]
+    fn delete_case_X() {
+        let mut v = t!(10,20,30) ; v.delete(0)  ; assert_eq!(v,t!(10,20,30));
+        let mut v = t!(10,20,30) ; v.delete(15) ; assert_eq!(v,t!(10,20,30));
+        let mut v = t!(10,20,30) ; v.delete(25) ; assert_eq!(v,t!(10,20,30));
+        let mut v = t!(10,20,30) ; v.delete(35) ; assert_eq!(v,t!(10,20,30));
+    }
+
+
+    #[test]
+    fn unsafe_take_smallest_no_rebalance() {
+        let mut v = t!(10,20);
+        assert_eq!(v.unsafe_take_smallest_no_rebalance(),(Interval(10,10),false));
+        assert_eq!(v,t!(20));
+        assert_eq!(v.unsafe_take_smallest_no_rebalance(),(Interval(20,20),true));
+        assert_eq!(v,Tree::default());
+
+        let mut v = t!(t!(10,12), 20, t!(30), 40, t!(50), 60, t!(70), 80, t!(90));
+        assert_eq!(v.unsafe_take_smallest_no_rebalance(),(Interval(10,10),false));
+        assert_eq!(v,t!(t!(12), 20, t!(30), 40, t!(50), 60, t!(70), 80, t!(90)));
+        assert_eq!(v.unsafe_take_smallest_no_rebalance(),(Interval(12,12),true));
+        assert_eq!(v,t!(Tree::default(), 20, t!(30), 40, t!(50), 60, t!(70), 80, t!(90)));
+    }
+
+    #[test]
+    fn unsafe_take_greatest_no_rebalance() {
+        let mut v = t!(10,20);
+        assert_eq!(v.unsafe_take_greatest_no_rebalance(),(Interval(20,20),false));
+        assert_eq!(v,t!(10));
+        assert_eq!(v.unsafe_take_greatest_no_rebalance(),(Interval(10,10),true));
+        assert_eq!(v,Tree::default());
+
+        let mut v = t!(t!(10), 20, t!(30), 40, t!(50), 60, t!(70), 80, t!(90,92));
+        assert_eq!(v.unsafe_take_greatest_no_rebalance(),(Interval(92,92),false));
+        assert_eq!(v,t!(t!(10), 20, t!(30), 40, t!(50), 60, t!(70), 80, t!(90)));
+        assert_eq!(v.unsafe_take_greatest_no_rebalance(),(Interval(90,90),true));
+        assert_eq!(v,t!(t!(10), 20, t!(30), 40, t!(50), 60, t!(70), 80, Tree::default()));
+    }
 }
 
 
