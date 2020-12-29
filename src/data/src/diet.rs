@@ -1136,7 +1136,7 @@ mod benches {
 
     #[bench]
     fn mode_rc_cell_num(b:&mut Bencher) {
-        let mut v = Rc::new(Cell::new(0));
+        let v = Rc::new(Cell::new(0));
         let num = 1000;
         b.iter(|| {
             for i in 0 .. num {
