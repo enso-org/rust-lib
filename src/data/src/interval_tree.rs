@@ -299,8 +299,22 @@ mod benches {
     fn bench_insert_ascending(b:&mut Bencher) {
         b.iter(|| {
             let mut v = IntervalTree::new();
-            for i in 0 .. 1000_000_00 {
+            for i in 0 .. 1000_0 {
                 v.insert(i*2);
+            }
+        });
+    }
+
+    /// # Results
+    ///    10^4 -> 10.1 ms
+    /// 2* 10^4 -> 55 ms
+    #[bench]
+    fn bench_insert_descending(b:&mut Bencher) {
+        b.iter(|| {
+            let max   = 3000_0;
+            let mut v = IntervalTree::new();
+            for i in 0 .. max {
+                v.insert((max-i)*2);
             }
         });
     }

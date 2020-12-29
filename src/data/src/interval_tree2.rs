@@ -44,12 +44,38 @@ impl From<(usize,usize)> for Interval {
     }
 }
 
-const DATA_SIZE : usize = 4;
-type DataType = [Interval;4];
-type DataTypeUninit = [MaybeUninit<Interval>;4];
-const CHILDREN_SIZE : usize = 5;
-type ChildrenType = [Tree;5];
-type ChildrenTypeUninit = [MaybeUninit<Tree>;5];
+
+
+macro_rules! inc {
+    (2)   => { 3 };
+    (4)   => { 5 };
+    (8)   => { 9 };
+    (16)  => { 17 };
+    (32)  => { 33 };
+    (64)  => { 65 };
+    (128) => { 129 };
+    (256) => { 257 };
+    (512) => { 513 };
+}
+
+/// This macro is used to define trees with different child count. After upgrading the compiler, we
+/// might drop this macro and parametrize the tree with type-level `const usize` instead.
+macro_rules! define_trees {
+($( $modname:tt :: $name:tt($num:tt) )*) => {$(
+
+pub use $modname::$name;
+pub mod $modname {
+    use super::*;
+
+// =================
+// === Constants ===
+// =================
+
+const DATA_SIZE     : usize = $num;
+const CHILDREN_SIZE : usize = inc!{$num};
+type DataArray           = [Interval;$num];
+type ChildrenArray       = [$name;inc!{$num}];
+type ChildrenArrayUninit = [MaybeUninit<$name>;inc!{$num}];
 
 
 
@@ -58,28 +84,25 @@ type ChildrenTypeUninit = [MaybeUninit<Tree>;5];
 // ============
 
 #[derive(Clone)]
-pub struct Tree {
-    data_count : usize,
-    data       : DataType,
-    children   : Option<Box<ChildrenType>>
+pub struct $name {
+    pub (crate) data_count : usize,
+    pub (crate) data       : DataArray,
+    pub (crate) children   : Option<Box<ChildrenArray>>
 }
 
-impl Default for Tree {
+impl Default for $name {
+
+    // Src https://doc.rust-lang.org/std/mem/union.MaybeUninit.html#initializing-an-array-element-by-element
     #[allow(clippy::uninit_assumed_init)]
     fn default() -> Self {
         let data_count = 0;
-
-        // src https://doc.rust-lang.org/std/mem/union.MaybeUninit.html#initializing-an-array-element-by-element
-        let mut data: DataTypeUninit = unsafe { MaybeUninit::uninit().assume_init() };
-        for elem in &mut data[..] { *elem = MaybeUninit::new(default()); }
-        let data = unsafe { mem::transmute::<_,DataType>(data) };
-
+        let data       = unsafe { MaybeUninit::uninit().assume_init() };
         let children   = None;
         Self {data_count,data,children}
     }
 }
 
-impl PartialEq for Tree {
+impl PartialEq for $name {
     fn eq(&self, other:&Self) -> bool {
         if self.data_count != other.data_count {
             return false;
@@ -104,9 +127,9 @@ impl PartialEq for Tree {
     }
 }
 
-impl Eq for Tree {}
+impl Eq for $name {}
 
-impl Debug for Tree {
+impl Debug for $name {
     fn fmt(&self, f:&mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut repr = vec![];
         if let Some(children) = &self.children {
@@ -120,19 +143,19 @@ impl Debug for Tree {
                 repr.push(format!("{:?}", self.data[i]));
             }
         }
-        write!(f, "Tree({})", repr.join(","))
+        write!(f, "$name({})", repr.join(","))
     }
 }
 
-impl Tree {
-    fn empty_children_array() -> ChildrenType {
+impl $name {
+    pub (crate) fn empty_children_array() -> ChildrenArray {
         // src https://doc.rust-lang.org/std/mem/union.MaybeUninit.html#initializing-an-array-element-by-element
-        let mut children: ChildrenTypeUninit = unsafe { MaybeUninit::uninit().assume_init() };
+        let mut children: ChildrenArrayUninit = unsafe { MaybeUninit::uninit().assume_init() };
         for elem in &mut children[..] { *elem = MaybeUninit::new(default()); }
-        unsafe { mem::transmute::<_,ChildrenType>(children) }
+        unsafe { mem::transmute::<_,ChildrenArray>(children) }
     }
 
-    fn unsafe_init_children(&mut self) -> &mut [Tree] {
+    fn unsafe_init_children(&mut self) -> &mut [$name] {
         self.children = Some(Box::new(Self::empty_children_array()));
         self.children.as_mut().unwrap().deref_mut()
     }
@@ -147,47 +170,12 @@ impl Tree {
         out
     }
 
-    // fn search(&self, t:usize) -> Result<usize, usize>
-    // {
-    //     self.binary_search_by(|interval| {
-    //         if      t + 1 <  interval.start   { Ordering::Less }
-    //         else if t     <= interval.end + 1 { Ordering::Equal }
-    //         else { Ordering::Greater }
-    //     })
-    // }
-
-    #[inline]
-    fn binary_search_by<'a, F>(&'a self, mut f: F) -> Result<usize, usize>
-        where
-            F: FnMut(&'a Interval) -> Ordering,
-    {
-        let s = &self.data;
-        let mut size = s.len();
-        if size == 0 {
-            return Err(0);
-        }
-        let mut base = 0usize;
-        while size > 1 {
-            let half = size / 2;
-            let mid = base + half;
-            // SAFETY: the call is made safe by the following inconstants:
-            // - `mid >= 0`: by definition
-            // - `mid < size`: `mid = size / 2 + size / 4 + size / 8 ...`
-            let cmp = f(unsafe { s.get_unchecked(mid) });
-            base = if cmp == std::cmp::Ordering::Greater { base } else { mid };
-            size -= half;
-        }
-        // SAFETY: base is always in [0, size) because base <= mid.
-        let cmp = f(unsafe { s.get_unchecked(base) });
-        if cmp == std::cmp::Ordering::Equal { Ok(base) } else { Err(base + (cmp == std::cmp::Ordering::Less) as usize) }
-    }
-
-    fn split_leaves(&self, left_split_index:usize, right_split_index:usize) -> (Tree,Tree) {
-        let mut left = Tree::default();
+    fn split_leaves(&self, left_split_index:usize, right_split_index:usize) -> ($name,$name) {
+        let mut left = $name::default();
         left.data_count = left_split_index;
         left.data[0..left_split_index].copy_from_slice(&self.data[0..left_split_index]);
 
-        let mut right = Tree::default();
+        let mut right = $name::default();
         right.data_count = DATA_SIZE - right_split_index;
         right.data[0..right.data_count].copy_from_slice(&self.data[right_split_index..]);
 
@@ -195,34 +183,31 @@ impl Tree {
     }
 
     fn split
-    (data:&mut DataType, children:&mut ChildrenType, left:Tree, right:Tree, split_index:usize)
-    -> (Tree,Tree) {
-        let mut p_left = Tree::default();
-        p_left.data_count = split_index;
-        p_left.data[0..split_index].copy_from_slice(&data[0..split_index]);
-
+    ( data              : &mut DataArray
+    , children          : &mut ChildrenArray
+    , left_split_index  : usize
+    , right_split_index : usize
+    ) -> ($name,$name) {
+        let mut p_left = $name::default();
+        p_left.data_count = left_split_index;
+        p_left.data[0..left_split_index].copy_from_slice(&data[0..left_split_index]);
         let mut left_children = Self::empty_children_array();
-        left_children[0..split_index].clone_from_slice(&children[0..split_index]);
-        left_children[split_index] = left;
+        left_children[0..left_split_index+1].clone_from_slice(&children[0..left_split_index+1]);
         p_left.children = Some(Box::new(left_children));
 
-        let mut p_right = Tree::default();
-        p_right.data_count = DATA_SIZE - split_index;
-        p_right.data[0..p_right.data_count].copy_from_slice(&data[split_index..]);
-
+        let mut p_right = $name::default();
+        p_right.data_count = DATA_SIZE - right_split_index;
+        p_right.data[0..p_right.data_count].copy_from_slice(&data[right_split_index..]);
         let mut right_children = Self::empty_children_array();
-        right_children[1..p_right.data_count+1].clone_from_slice(&children[split_index+1..]);
-        right_children[0] = right;
+        right_children[0..p_right.data_count+1].clone_from_slice(&children[right_split_index..]);
         p_right.children = Some(Box::new(right_children));
 
         (p_left,p_right)
     }
 
     pub fn insert(&mut self, t:usize) {
-        println!("--- insert");
-
         if let Some((median,left,right)) = self.insert_internal(t) {
-            let mut new_root = Tree::default();
+            let mut new_root = $name::default();
             new_root.data_count = 1;
             new_root.data[0] = median;
             let new_root_children = new_root.unsafe_init_children();
@@ -232,41 +217,33 @@ impl Tree {
         }
     }
 
-    pub fn insert_internal(&mut self, t:usize) -> Option<(Interval,Tree,Tree)> {
-        println!("--- insert_internal");
-
+    pub fn insert_internal(&mut self, t:usize) -> Option<(Interval,$name,$name)> {
         let pos = self.search(t);
-
-        println!("POS: {:?}",pos);
-
         match self.search(t) {
             Err(pos) => {
                 match &mut self.children {
                     None => {
-                        println!("--- 0");
-
                         if self.data_count < DATA_SIZE {
-                            println!("--- 1");
                             // Insert Case (1)
                             self.data[pos..].rotate_right(1);
                             self.data[pos] = Interval(t,t);
                             self.data_count += 1;
                             None
                         } else {
-                            let median_index = DATA_SIZE / 2;
-                            let (median,(left,right)) = if (pos == median_index) {
+                            let median_ix = DATA_SIZE / 2;
+                            let (median,(left,right)) = if (pos == median_ix) {
                                 // Insert Case (2)
-                                (Interval(t,t),self.split_leaves(median_index,median_index))
-                            } else if (pos < median_index) {
+                                (Interval(t,t),self.split_leaves(median_ix,median_ix))
+                            } else if (pos < median_ix) {
                                 // Insert Case (3)
-                                let (mut left,right) = self.split_leaves(median_index-1, median_index);
+                                let (mut left,right) = self.split_leaves(median_ix-1, median_ix);
                                 left.insert_internal(t);
-                                (self.data[median_index-1],(left,right))
+                                (self.data[median_ix-1],(left,right))
                             } else {
                                 // Insert Case (4)
-                                let (left, mut right) = self.split_leaves(median_index, median_index+1);
+                                let (left, mut right) = self.split_leaves(median_ix, median_ix+1);
                                 right.insert_internal(t);
-                                (self.data[median_index],(left,right))
+                                (self.data[median_ix],(left,right))
                             };
                             Some((median,left,right))
                         }
@@ -286,83 +263,59 @@ impl Tree {
 
                                 //zakomentowanie tego brancha usuwa stackoverflow, mimmo ze tu nigdy niewchodzimy
 
-                                let median_index = DATA_SIZE / 2;
-                                let data  = &mut self.data;
+                                let median_ix = DATA_SIZE / 2;
+                                let data      = &mut self.data;
 
-                                if (pos == median_index) {
+                                if (pos == median_ix) {
                                     // Insert Case (5)
-                                    let split = |ix| Self::split(data,children,left,right,ix);
 
-                                    let (p_left,p_right) = split(median_index);
+                                    let mut split = |l,r| Self::split(data,children,l,r);
+                                    let (mut p_left, mut p_right) = split(median_ix,median_ix);
+
+                                    let left_children        = p_left.children.as_mut().unwrap();
+                                    let right_children       = p_right.children.as_mut().unwrap();
+                                    left_children[median_ix] = left;
+                                    right_children[0]        = right;
+
                                     Some((median,p_left,p_right))
-                                } else if (pos < median_index) {
-                                    // Insert Case (6)
-                                    let split = |ix| Self::split(data,children,left,right,ix);
 
-                                    let (p_left,p_right) = split(median_index-1);
-                                    self.data[pos] = median;
-                                    Some((self.data[median_index-1],p_left,p_right))
+                                } else if (pos < median_ix) {
+                                    // Insert Case (6)
+
+                                    let left_split_ix  = median_ix - 1;
+                                    let right_split_ix = median_ix;
+                                    let mut split      = |l,r| Self::split(data,children,l,r);
+                                    let (mut p_left,p_right) = split(left_split_ix,right_split_ix);
+
+                                    let branch_median_ix = pos;
+                                    let left_children    = p_left.children.as_mut().unwrap();
+                                    left_children[branch_median_ix..].rotate_right(1);
+                                    left_children[branch_median_ix]   = left;
+                                    left_children[branch_median_ix+1] = right;
+                                    p_left.data[branch_median_ix..].rotate_right(1);
+                                    p_left.data[branch_median_ix] = median;
+                                    p_left.data_count += 1;
+
+                                    Some((self.data[left_split_ix],p_left,p_right))
+
                                 } else {
                                     // Insert Case (7)
-                                    // let (p_left,p_right) = split(median_index+1);
-                                    //self.data[pos] = median;
 
-                                    // t!(t!(10), 20, t!(30), 40, t!(50), 60, t!(70), 80, t!(90,92,94,96))
+                                    let left_split_ix  = median_ix;
+                                    let right_split_ix = median_ix + 1;
+                                    let mut split      = |l,r| Self::split(data,children,l,r);
+                                    let (p_left,mut p_right) = split(left_split_ix,right_split_ix);
 
-
-                                    // Tree(
-                                    //     Tree(
-                                    //         Interval(96,96),
-                                    //         Interval(98,98)
-                                    //     ),
-                                    //     Interval(80,80),
-                                    //     Tree(
-                                    //         Interval(90,90),
-                                    //         Interval(92,92),
-                                    //         Interval(94,94),
-                                    //         Interval(96,96)
-                                    //     )
-                                    // )
-
-                                    let split_index = median_index;
-
-                                    let mut p_left = Tree::default();
-                                    p_left.data_count = split_index;
-                                    p_left.data[0..split_index].copy_from_slice(&data[0..split_index]);
-                                    let mut left_children = Self::empty_children_array();
-                                    left_children[0..split_index+1].clone_from_slice(&children[0..split_index+1]);
-                                    // left_children[split_index] = Box::new(left);
-                                    p_left.children = Some(Box::new(left_children));
-
-
-
-                                    let right_split_index = median_index + 1;
-                                    let mut p_right = Tree::default();
-                                    p_right.data_count = DATA_SIZE - right_split_index;
-                                    // println!("p_right.data_count: {:?}",p_right.data_count);
-
-                                    p_right.data[0..p_right.data_count].copy_from_slice(&data[right_split_index..]);
-                                    let mut right_children = Self::empty_children_array();
-                                    right_children[0..p_right.data_count+1].clone_from_slice(&children[right_split_index..]);
-
-                                    let iii = pos-right_split_index;
-                                    right_children[iii..].rotate_right(1);
-                                    right_children[iii] = left;
-                                    right_children[iii+1] = right;
-                                    p_right.data[iii..].rotate_right(1);
-                                    p_right.data[iii] = median;
+                                    let branch_median_ix = pos-right_split_ix;
+                                    let right_children   = p_right.children.as_mut().unwrap();
+                                    right_children[branch_median_ix..].rotate_right(1);
+                                    right_children[branch_median_ix]   = left;
+                                    right_children[branch_median_ix+1] = right;
+                                    p_right.data[branch_median_ix..].rotate_right(1);
+                                    p_right.data[branch_median_ix] = median;
                                     p_right.data_count += 1;
 
-                                    // right_children[0] = Box::new(right);
-                                    p_right.children = Some(Box::new(right_children));
-
-                                    // println!("iii: {:?}",iii);
-                                    // println!("pos: {:?}",pos);
-                                    // println!("sub-median: {:?}",median);
-                                    // println!("median: {:?}",self.data[median_index]);
-                                    // println!("p_left: {:?}",p_left);
-                                    // println!("p_right: {:?}",p_right);
-                                    Some((self.data[split_index],p_left,p_right))
+                                    Some((self.data[left_split_ix],p_left,p_right))
                                 }
                             }
                         } else { None }
@@ -393,61 +346,6 @@ impl Tree {
         }
     }
 
-
-    pub fn delete(&mut self, t:usize) -> bool {
-        match self.search(t) {
-            Ok(pos) => {
-                match &mut self.children {
-                    None => {
-                        // Delete Case (1)
-                        self.data[pos..].rotate_left(1);
-                        self.data_count -= 1;
-                        false
-                    },
-                    Some(children) => todo!()
-                }
-            }
-            Err(pos) => {
-                match &mut self.children {
-                    None => {
-                        // Delete Case (X)
-                        false
-                    },
-                    Some(children) => {
-                        if children[pos].delete(t) {
-                            todo!()
-                        } else {
-                            false
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    fn unsafe_take_smallest_no_rebalance(&mut self) -> (Interval,bool) {
-        if let Some(children) = &mut self.children {
-            children[0].unsafe_take_smallest_no_rebalance()
-        } else {
-            let out = self.data[0];
-            self.data[..].rotate_left(1);
-            self.data_count -= 1;
-            let needs_rebalance = self.data_count == 0;
-            (out,needs_rebalance)
-        }
-    }
-
-    fn unsafe_take_greatest_no_rebalance(&mut self) -> (Interval,bool) {
-        if let Some(children) = &mut self.children {
-            children[self.data_count].unsafe_take_greatest_no_rebalance()
-        } else {
-            let out = self.data[self.data_count-1];
-            self.data_count -= 1;
-            let needs_rebalance = self.data_count == 0;
-            (out,needs_rebalance)
-        }
-    }
-
     pub fn to_vec(&self) -> Vec<Interval> {
         let mut v = vec![];
         if let Some(children) = &self.children {
@@ -465,6 +363,24 @@ impl Tree {
     }
 }
 
+})*};}
+
+
+define_trees!{
+    tree2::Tree2(2)
+    tree4::Tree4(4)
+    tree8::Tree8(8)
+    tree16::Tree16(16)
+    tree32::Tree32(32)
+    tree64::Tree64(64)
+}
+
+
+
+// ===============================
+// === Tree4 Testing Utilities ===
+// ===============================
+
 trait FromSorted<T> {
     fn from_sorted(t:T) -> Self;
 }
@@ -473,9 +389,9 @@ trait LeafFromSorted<T> {
     fn leaf_from_sorted(t:T) -> Self;
 }
 
-impl FromSorted<(Tree,(usize,usize),Tree)> for Tree {
-    fn from_sorted(t:(Tree,(usize,usize),Tree)) -> Self {
-        let mut tree = Tree::default();
+impl FromSorted<(Tree4,(usize,usize),Tree4)> for Tree4 {
+    fn from_sorted(t:(Tree4,(usize,usize),Tree4)) -> Self {
+        let mut tree = Tree4::default();
         tree.data_count = 1;
         tree.data[0] = Interval((t.1).0,(t.1).1);
         let mut children = Self::empty_children_array();
@@ -486,9 +402,9 @@ impl FromSorted<(Tree,(usize,usize),Tree)> for Tree {
     }
 }
 
-impl FromSorted<(Tree,usize,Tree)> for Tree {
-    fn from_sorted(t:(Tree,usize,Tree)) -> Self {
-        let mut tree = Tree::default();
+impl FromSorted<(Tree4,usize,Tree4)> for Tree4 {
+    fn from_sorted(t:(Tree4,usize,Tree4)) -> Self {
+        let mut tree = Tree4::default();
         tree.data_count = 1;
         tree.data[0] = Interval(t.1,t.1);
         let mut children = Self::empty_children_array();
@@ -499,9 +415,9 @@ impl FromSorted<(Tree,usize,Tree)> for Tree {
     }
 }
 
-impl FromSorted<(Tree,usize,Tree,usize,Tree)> for Tree {
-    fn from_sorted(t:(Tree,usize,Tree,usize,Tree)) -> Self {
-        let mut tree = Tree::default();
+impl FromSorted<(Tree4,usize,Tree4,usize,Tree4)> for Tree4 {
+    fn from_sorted(t:(Tree4,usize,Tree4,usize,Tree4)) -> Self {
+        let mut tree = Tree4::default();
         tree.data_count = 2;
         tree.data[0] = Interval(t.1,t.1);
         tree.data[1] = Interval(t.3,t.3);
@@ -514,9 +430,9 @@ impl FromSorted<(Tree,usize,Tree,usize,Tree)> for Tree {
     }
 }
 
-impl FromSorted<(Tree,usize,Tree,usize,Tree,usize,Tree)> for Tree {
-    fn from_sorted(t:(Tree,usize,Tree,usize,Tree,usize,Tree)) -> Self {
-        let mut tree = Tree::default();
+impl FromSorted<(Tree4,usize,Tree4,usize,Tree4,usize,Tree4)> for Tree4 {
+    fn from_sorted(t:(Tree4,usize,Tree4,usize,Tree4,usize,Tree4)) -> Self {
+        let mut tree = Tree4::default();
         tree.data_count = 3;
         tree.data[0] = Interval(t.1,t.1);
         tree.data[1] = Interval(t.3,t.3);
@@ -531,9 +447,9 @@ impl FromSorted<(Tree,usize,Tree,usize,Tree,usize,Tree)> for Tree {
     }
 }
 
-impl FromSorted<(Tree,usize,Tree,usize,Tree,usize,Tree,usize,Tree)> for Tree {
-    fn from_sorted(t:(Tree,usize,Tree,usize,Tree,usize,Tree,usize,Tree)) -> Self {
-        let mut tree = Tree::default();
+impl FromSorted<(Tree4,usize,Tree4,usize,Tree4,usize,Tree4,usize,Tree4)> for Tree4 {
+    fn from_sorted(t:(Tree4,usize,Tree4,usize,Tree4,usize,Tree4,usize,Tree4)) -> Self {
+        let mut tree = Tree4::default();
         tree.data_count = 4;
         tree.data[0] = Interval(t.1,t.1);
         tree.data[1] = Interval(t.3,t.3);
@@ -551,20 +467,20 @@ impl FromSorted<(Tree,usize,Tree,usize,Tree,usize,Tree,usize,Tree)> for Tree {
 }
 
 
-impl<T1> LeafFromSorted<(T1,)> for Tree
+impl<T1> LeafFromSorted<(T1,)> for Tree4
     where T1:Into<Interval> {
     fn leaf_from_sorted(t:(T1,)) -> Self {
-        let mut tree = Tree::default();
+        let mut tree = Tree4::default();
         tree.data_count = 1;
         tree.data[0] = t.0.into();
         tree
     }
 }
 
-impl<T1,T2> LeafFromSorted<(T1,T2)> for Tree
+impl<T1,T2> LeafFromSorted<(T1,T2)> for Tree4
     where T1:Into<Interval>, T2:Into<Interval> {
     fn leaf_from_sorted(t:(T1,T2)) -> Self {
-        let mut tree = Tree::default();
+        let mut tree = Tree4::default();
         tree.data_count = 2;
         tree.data[0] = t.0.into();
         tree.data[1] = t.1.into();
@@ -572,10 +488,10 @@ impl<T1,T2> LeafFromSorted<(T1,T2)> for Tree
     }
 }
 
-impl<T1,T2,T3> LeafFromSorted<(T1,T2,T3)> for Tree
+impl<T1,T2,T3> LeafFromSorted<(T1,T2,T3)> for Tree4
     where T1:Into<Interval>, T2:Into<Interval>, T3:Into<Interval> {
     fn leaf_from_sorted(t:(T1,T2,T3)) -> Self {
-        let mut tree = Tree::default();
+        let mut tree = Tree4::default();
         tree.data_count = 3;
         tree.data[0] = t.0.into();
         tree.data[1] = t.1.into();
@@ -584,10 +500,10 @@ impl<T1,T2,T3> LeafFromSorted<(T1,T2,T3)> for Tree
     }
 }
 
-impl<T1,T2,T3,T4> LeafFromSorted<(T1,T2,T3,T4)> for Tree
+impl<T1,T2,T3,T4> LeafFromSorted<(T1,T2,T3,T4)> for Tree4
     where T1:Into<Interval>, T2:Into<Interval>, T3:Into<Interval>, T4:Into<Interval> {
     fn leaf_from_sorted(t:(T1,T2,T3,T4)) -> Self {
-        let mut tree = Tree::default();
+        let mut tree = Tree4::default();
         tree.data_count = 4;
         tree.data[0] = t.0.into();
         tree.data[1] = t.1.into();
@@ -597,9 +513,9 @@ impl<T1,T2,T3,T4> LeafFromSorted<(T1,T2,T3,T4)> for Tree
     }
 }
 
-impl FromSorted<((usize,usize),)> for Tree {
+impl FromSorted<((usize,usize),)> for Tree4 {
     fn from_sorted(t:((usize,usize),)) -> Self {
-        let mut tree = Tree::default();
+        let mut tree = Tree4::default();
         tree.data_count = 1;
         tree.data[0] = Interval((t.0).0,(t.0).1);
         tree
@@ -608,9 +524,9 @@ impl FromSorted<((usize,usize),)> for Tree {
 
 
 
-impl FromSorted<((usize,usize),(usize,usize))> for Tree {
+impl FromSorted<((usize,usize),(usize,usize))> for Tree4 {
     fn from_sorted(t:((usize,usize),(usize,usize))) -> Self {
-        let mut tree = Tree::default();
+        let mut tree = Tree4::default();
         tree.data_count = 2;
         tree.data[0] = Interval((t.0).0,(t.0).1);
         tree.data[1] = Interval((t.1).0,(t.1).1);
@@ -618,9 +534,9 @@ impl FromSorted<((usize,usize),(usize,usize))> for Tree {
     }
 }
 
-impl FromSorted<((usize,usize),(usize,usize),(usize,usize))> for Tree {
+impl FromSorted<((usize,usize),(usize,usize),(usize,usize))> for Tree4 {
     fn from_sorted(t:((usize,usize),(usize,usize),(usize,usize))) -> Self {
-        let mut tree = Tree::default();
+        let mut tree = Tree4::default();
         tree.data_count = 3;
         tree.data[0] = Interval((t.0).0,(t.0).1);
         tree.data[1] = Interval((t.1).0,(t.1).1);
@@ -630,9 +546,9 @@ impl FromSorted<((usize,usize),(usize,usize),(usize,usize))> for Tree {
 }
 
 
-impl FromSorted<((usize,usize),(usize,usize),(usize,usize),(usize,usize))> for Tree {
+impl FromSorted<((usize,usize),(usize,usize),(usize,usize),(usize,usize))> for Tree4 {
     fn from_sorted(t:((usize,usize),(usize,usize),(usize,usize),(usize,usize))) -> Self {
-        let mut tree = Tree::default();
+        let mut tree = Tree4::default();
         tree.data_count = 4;
         tree.data[0] = Interval((t.0).0,(t.0).1);
         tree.data[1] = Interval((t.1).0,(t.1).1);
@@ -642,38 +558,38 @@ impl FromSorted<((usize,usize),(usize,usize),(usize,usize),(usize,usize))> for T
     }
 }
 
-impl FromSorted<(usize,)> for Tree {
+impl FromSorted<(usize,)> for Tree4 {
     fn from_sorted(t:(usize,)) -> Self {
         Self::from_sorted(((t.0,t.0),))
     }
 }
 
-impl FromSorted<(usize,usize)> for Tree {
+impl FromSorted<(usize,usize)> for Tree4 {
     fn from_sorted(t:(usize,usize)) -> Self {
         Self::from_sorted(((t.0,t.0),(t.1,t.1)))
     }
 }
 
-impl FromSorted<(usize,usize,usize)> for Tree {
+impl FromSorted<(usize,usize,usize)> for Tree4 {
     fn from_sorted(t:(usize,usize,usize)) -> Self {
         Self::from_sorted(((t.0,t.0),(t.1,t.1),(t.2,t.2)))
     }
 }
 
-impl FromSorted<(usize,usize,usize,usize)> for Tree {
+impl FromSorted<(usize,usize,usize,usize)> for Tree4 {
     fn from_sorted(t:(usize,usize,usize,usize)) -> Self {
         Self::from_sorted(((t.0,t.0),(t.1,t.1),(t.2,t.2),(t.3,t.3)))
     }
 }
 
-fn t<T>(t:T) -> Tree
-where Tree:FromSorted<T> {
-    <Tree as FromSorted<T>>::from_sorted(t)
+fn t<T>(t:T) -> Tree4
+where Tree4:FromSorted<T> {
+    <Tree4 as FromSorted<T>>::from_sorted(t)
 }
 
-fn l<T>(t:T) -> Tree
-where Tree:LeafFromSorted<T> {
-    <Tree as LeafFromSorted<T>>::leaf_from_sorted(t)
+fn l<T>(t:T) -> Tree4
+where Tree4:LeafFromSorted<T> {
+    <Tree4 as LeafFromSorted<T>>::leaf_from_sorted(t)
 }
 
 
@@ -683,14 +599,14 @@ macro_rules! t {
     };
 }
 
-macro_rules! l {
-    ($($ts:tt)*) => {
-        l(($($ts)*,))
-    };
-}
+// macro_rules! l {
+//     ($($ts:tt)*) => {
+//         l(($($ts)*,))
+//     };
+// }
 
-
-
+//
+//
 // =============
 // === Tests ===
 // =============
@@ -699,33 +615,17 @@ macro_rules! l {
 mod tests {
     use super::*;
 
-    // use std::os::unix::io::FromRawFd;
-    // use std::fs::File;
-    // #[test]
-    // fn ttt() {
-    //     let stdout = unsafe { File::from_raw_fd(1) };
-    //     std::io::set_print(Some(Box::new(stdout)));
-    //     // let mut v = Tree::default();
-    //     // for i in 0 .. 100_0 {
-    //     //     v.insert(i*2);
-    //     // }
-    //     // println!("{:?}",v);
-    //     println!("hello1");
-    //     let mut v = Tree::default();
-    //     println!("hello2");
-    //     v.insert(1);
-    // }
     fn intervals(bounds:&[(usize,usize)]) -> Vec<Interval> {
         bounds.iter().copied().map(|(a,b)|Interval(a,b)).collect()
     }
 
-    fn check(tree:&Tree, bounds:&[(usize,usize)]) {
+    fn check(tree:&Tree4, bounds:&[(usize,usize)]) {
         assert_eq!(tree.to_vec(),intervals(bounds));
     }
 
     #[test]
     fn leaf_insertion() {
-        let mut v = Tree::default();
+        let mut v = Tree4::default();
         check(&v,&[]);
         v.insert(1) ; check(&v,&[(1,1)]);
         v.insert(3) ; check(&v,&[(1,1),(3,3)]);
@@ -737,7 +637,7 @@ mod tests {
 
     #[test]
     fn deep_insertion() {
-        let mut v = Tree::default();
+        let mut v = Tree4::default();
         check(&v,&[]);
         v.insert(10)  ; check(&v,&[(10,10)]);
         v.insert(30)  ; check(&v,&[(10,10),(30,30)]);
@@ -797,15 +697,50 @@ mod tests {
 
     #[test]
     fn insert_case_6() {
-        // let mut v = t!(t!(10,12,14,16), 20, t!(30), 40, t!(50), 60, t!(70), 80, t!(90));
-        // v.insert(18);
-        // assert_eq!(v,t!(t!(10,12), 14, t!(t!(16,18),20,t!(36),40,t!(50),60,t!(70),80,t!(90))));
-        // Left:  t!(t!(t!(10,12,14,16),(20,20),t!((10,10),(12,12))),(40,40),t!(t!((16,16),(18,18)),(40,40),t!((50,50)),(60,60),t!((70,70)),(80,80),t!((90,90))))
+        let mut v = t!(t!(10,12,14,16), 20, t!(30), 40, t!(50), 60, t!(70), 80, t!(90));
+        v.insert(18);
+        assert_eq!(v,
+            t!(
+                t!(
+                    t!(10,12),
+                    14,
+                    t!(16,18),
+                    20,
+                    t!(30)
+                ),
+                40,
+                t!(
+                    t!(50),
+                    60,
+                    t!(70),
+                    80,
+                    t!(90)
+                )
+            )
+        );
 
 
         let mut v = t!(t!(10), 20, t!(30,32,34,36), 40, t!(50), 60, t!(70), 80, t!(90));
         v.insert(38);
-        assert_eq!(v,t!(t!(t!(10),20,t!(30,32)), 34, t!(t!(36,38),40,t!(50),60,t!(70),80,t!(90))));
+        assert_eq!(v,
+            t!(
+                t!(
+                    t!(10),
+                    20,
+                    t!(30,32),
+                    34,
+                    t!(36,38)
+                ),
+                40,
+                t!(
+                    t!(50),
+                    60,
+                    t!(70),
+                    80,
+                    t!(90)
+                )
+            )
+        );
     }
 
     #[test]
@@ -912,106 +847,227 @@ mod tests {
             )
         )
     }
-
-    // #[test]
-    // fn delete_case_1() {
-    //     let mut v = l!((10,11),20,30) ; v.delete(11) ; assert_eq!(v,t!(10,20,30));
-    //     let mut v = t!(10,20,30) ; v.delete(10) ; assert_eq!(v,t!(20,30));
-    //     let mut v = t!(10,20,30) ; v.delete(20) ; assert_eq!(v,t!(10,30));
-    //     let mut v = t!(10,20,30) ; v.delete(30) ; assert_eq!(v,t!(10,20));
-    //     let mut v = t!(10,20)    ; v.delete(10) ; assert_eq!(v,t!(20));
-    //     let mut v = t!(10,20)    ; v.delete(20) ; assert_eq!(v,t!(10));
-    //     let mut v = t!(10)       ; v.delete(10) ; assert_eq!(v,t!::default());
-    // }
-
-    #[test]
-    fn delete_case_X() {
-        let mut v = t!(10,20,30) ; v.delete(0)  ; assert_eq!(v,t!(10,20,30));
-        let mut v = t!(10,20,30) ; v.delete(15) ; assert_eq!(v,t!(10,20,30));
-        let mut v = t!(10,20,30) ; v.delete(25) ; assert_eq!(v,t!(10,20,30));
-        let mut v = t!(10,20,30) ; v.delete(35) ; assert_eq!(v,t!(10,20,30));
-    }
-
-
-    #[test]
-    fn unsafe_take_smallest_no_rebalance() {
-        let mut v = t!(10,20);
-        assert_eq!(v.unsafe_take_smallest_no_rebalance(),(Interval(10,10),false));
-        assert_eq!(v,t!(20));
-        assert_eq!(v.unsafe_take_smallest_no_rebalance(),(Interval(20,20),true));
-        assert_eq!(v,Tree::default());
-
-        let mut v = t!(t!(10,12), 20, t!(30), 40, t!(50), 60, t!(70), 80, t!(90));
-        assert_eq!(v.unsafe_take_smallest_no_rebalance(),(Interval(10,10),false));
-        assert_eq!(v,t!(t!(12), 20, t!(30), 40, t!(50), 60, t!(70), 80, t!(90)));
-        assert_eq!(v.unsafe_take_smallest_no_rebalance(),(Interval(12,12),true));
-        assert_eq!(v,t!(Tree::default(), 20, t!(30), 40, t!(50), 60, t!(70), 80, t!(90)));
-    }
-
-    #[test]
-    fn unsafe_take_greatest_no_rebalance() {
-        let mut v = t!(10,20);
-        assert_eq!(v.unsafe_take_greatest_no_rebalance(),(Interval(20,20),false));
-        assert_eq!(v,t!(10));
-        assert_eq!(v.unsafe_take_greatest_no_rebalance(),(Interval(10,10),true));
-        assert_eq!(v,Tree::default());
-
-        let mut v = t!(t!(10), 20, t!(30), 40, t!(50), 60, t!(70), 80, t!(90,92));
-        assert_eq!(v.unsafe_take_greatest_no_rebalance(),(Interval(92,92),false));
-        assert_eq!(v,t!(t!(10), 20, t!(30), 40, t!(50), 60, t!(70), 80, t!(90)));
-        assert_eq!(v.unsafe_take_greatest_no_rebalance(),(Interval(90,90),true));
-        assert_eq!(v,t!(t!(10), 20, t!(30), 40, t!(50), 60, t!(70), 80, Tree::default()));
-    }
 }
 
 
+
+// ==================
+// === Benchmarks ===
+// ==================
+
 extern crate test;
 
+
+// This is a simplified implementation created for the needs of benchmarking of the
+// `std::collections::BTreeSet`. It works correctly only for inserting unit intervals (where
+// `start` = `end`).
+#[cfg(test)]
+impl PartialOrd for Interval {
+    fn partial_cmp(&self, other:&Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+// This is a simplified implementation created for the needs of benchmarking of the
+// `std::collections::BTreeSet`. It works correctly only for inserting unit intervals (where
+// `start` = `end`).
+#[cfg(test)]
+impl Ord for Interval{
+    fn cmp(&self, other:&Self) -> Ordering {
+        if      other.start + 1 < self.start   { Ordering::Greater }
+        else if other.start     > self.end + 1 { Ordering::Less }
+        else                                   { Ordering::Equal }
+    }
+}
+
+/// # How the results were measured
+///
+/// The results provided below are shown only for intuition building and would vary depending on the
+/// used hardware. They were measured by using the MacBook Pro 2019 with Intel Core i9 2.4GHz.
+///
+///
+/// # Summary
+///
+/// There are several interesting facts about the current implementation:
+///
+/// 1. It seems that (at least for now) the best performing implementation is the `Tree16`.
+///
+/// 2. When performing insertions of ascending, non-overlapping intervals, the `Tree16` performs
+///    60% SLOWER than `std::collections::BTreeSet`.
+///
+/// 3. When performing insertions of descending, non-overlapping intervals, the `Tree16` performs
+///    40% SLOWER than `std::collections::BTreeSet`.
+///
+/// 4. In case of `Tree16`, the insertion in ascending order is 50% slower than in descending order.
+///    In case of `std::collections::BTreeSet`, insertion in ascending order is 40% slower than in
+///    descending order.
 #[cfg(test)]
 mod benches {
     use super::*;
     use test::Bencher;
 
+    /// # Results (ms)
+    ///                                -> BEST <-
+    ///        | Tree2 | Tree4 | Tree8 | Tree16 | Tree32 |
+    ///   10^4 | 12.5  | 4     | 2.3   | 1.4    | 1.8    |
+    ///   10^5 |       | 63.9  | 31.6  | 18.3   | 21.2   |
+    ///   10^6 |       |       |       | 285.5  |        |
     #[bench]
     fn bench_insert_ascending(b:&mut Bencher) {
-
         b.iter(|| {
-            let mut v = Tree::default();
-            v.insert(1);
-            // for i in 0 .. 1000_0 {
-            //     v.insert(i*2);
-            // }
+            let mut v = Tree16::default();
+            for i in 0 .. test::black_box(1000) {
+                v.insert(i*2);
+            }
         });
     }
+
+    /// # Results (ms)
+    ///                                -> BEST <-
+    ///        | Tree2 | Tree4 | Tree8 | Tree16 | Tree32 | Tree64 |
+    ///   10^4 | 12.3  | 3.6   | 1.8   | 0.92   | 1      | 1.7    |
+    ///   10^5 | 200   | 62    | 27.5  | 12     | 12     | 18.9   |
+    ///   10^6 |       |       |       | 212    |        |        |
+    #[bench]
+    fn bench_insert_descending(b:&mut Bencher) {
+        b.iter(|| {
+            let max   = test::black_box(1000_00);
+            let mut v = Tree16::default();
+            for i in 0 .. max {
+                v.insert((max-i)*2);
+            }
+        });
+    }
+
+    /// # Results (ms)
+    ///                                -> BEST <-
+    ///        | Tree2 | Tree4 | Tree8 | Tree16 | Tree32 | Tree64 |
+    ///   10^4 | 14.1  | 5.2   | 3.4   | 2.7    | 3.32   | 4.8    |
+    ///   10^5 |       |       | 43.9  | 32     | 39.5   |        |
+    #[bench]
+    fn bench_insert_ascending_growing(b:&mut Bencher) {
+        b.iter(|| {
+            let max = test::black_box(1000);
+            let mut v = Tree16::default();
+            for i in 0 .. max { v.insert(i*4); }
+            for i in 0 .. max { v.insert(i*4+1); }
+            for i in 0 .. max { v.insert(i*4+2); }
+        });
+    }
+
+    /// # Results (ms)
+    ///
+    ///   10^4 | 0.92 |
+    ///   10^5 | 11.8 |
+    ///   10^6 | 149  |
+    #[bench]
+    fn bench_insert_ascending_std(b:&mut Bencher) {
+        b.iter(|| {
+            let mut v = std::collections::BTreeSet::<Interval>::default();
+            for i in 1 .. test::black_box(1000) {
+                let j = i*2;
+                v.insert(Interval(j,j));
+            }
+        });
+    }
+
+    /// # Results (ms)
+    ///
+    ///   10^4 | 0.6 |
+    ///   10^5 | 8.8 |
+    ///   10^6 | 101 |
+    #[bench]
+    fn bench_insert_descending_std(b:&mut Bencher) {
+        b.iter(|| {
+            let mut v = std::collections::BTreeSet::<Interval>::default();
+            let max   = test::black_box(1000);
+            for i in 0 .. max {
+                let j = (max-i)*2;
+                v.insert(Interval(j,j));
+            }
+        });
+    }
+
+    /// # Results (ms)
+    ///
+    ///   10^4 | 0.08  |
+    ///   10^5 | 9.7   |
+    ///   10^6 | 115.5 |
+    #[bench]
+    fn bench_insert_ascending_std_usize(b:&mut Bencher) {
+        b.iter(|| {
+            let mut v = std::collections::BTreeSet::<usize>::default();
+            for i in 1 .. test::black_box(1000_000) {
+                v.insert(i*2);
+            }
+        });
+    }
+
+    /// # Results (ms)
+    ///
+    ///   10^5 | 0.1 |
+    ///   10^6 | 2.5 |
+    #[bench]
+    fn bench_insert_vec_non_sorted(b:&mut Bencher) {
+        b.iter(|| {
+            let mut v = Vec::<usize>::default();
+            for i in 1 .. test::black_box(1000) {
+                v.push(i*2);
+            }
+        });
+    }
+
+    /// # Results (ms)
+    ///
+    ///        | 100  | 1000 | 10_000 | (sort_every)
+    ///   10^4 | 0.3  | 0.09 | 0.06   |
+    ///   10^5 | 26   | 3.5  | 0.9    |
+    ///   10^6 |      |      | 63.8   |
+    #[bench]
+    fn bench_insert_vec_sort_every_x(b:&mut Bencher) {
+        b.iter(|| {
+            let sort_every = test::black_box(10000);
+            let mut v = Vec::<usize>::default();
+            for i in 1 .. test::black_box(1000) {
+                v.push(i*2);
+                if i % sort_every == 0 {
+                    v.sort()
+                }
+            }
+        });
+    }
+
+    /// # Results (ms)
+    ///
+    ///   10^5 | 0.04 |
+    ///   10^6 | 0.5  |
+    ///   10^7 | 7.5  |
+    ///   10^8 | 89.4 |
+
+    #[bench]
+    fn vec_sort_already_almost_sorted(b:&mut Bencher) {
+        let mut v = Vec::<usize>::default();
+        let num = 1000;
+        for i in 0 .. num {
+            v.push(num - i);
+        }
+        b.iter(|| {
+            v.sort()
+        });
+    }
+
+    // /// Benchmarks of the `lz_diet-0.1.6` crate. Disabled in order not to include it in the final
+    // /// binary.
+    // /// # Results (ms)
+    // ///   10^4 | 7.4  |
+    // ///   10^5 | 85.1 |
+    // #[bench]
+    // fn bench_insert_ascending_lz_diet(b:&mut Bencher) {
+    //     b.iter(|| {
+    //         let mut v = lz_diet::Diet::new();
+    //         for i in 0 .. test::black_box(1000_00) {
+    //             v.insert(i*2);
+    //         }
+    //     });
+    // }
 }
-
-//
-// Tree(
-//     Tree(
-//         Interval(0,0),
-//         Interval(2,2)
-//     ),
-//     Interval(4,4),
-//     Tree(
-//         Interval(6,6),
-//         Interval(8,8)
-//     ),
-//     Interval(10,10),
-//     Tree(
-//         Interval(12,12),
-//         Interval(14,14)
-//     ),
-//     Interval(16,16),
-//     Tree(
-//         Interval(18,18),
-//         Interval(20,20)
-//     ),
-//     Interval(22,22),
-//     Tree(
-//         Interval(24,24),
-//         Interval(26,26),
-//         Interval(28,28),
-//         Interval(30,30)
-//     )
-// )
-
