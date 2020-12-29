@@ -931,7 +931,7 @@ extern crate test;
 // `start` = `end`).
 #[cfg(test)]
 impl PartialOrd for Interval {
-    fn partial_cmp(&self, other:&Self) -> Option<Ordering> {
+    fn partial_cmp(&self, other:&Self) -> Option<std::cmp::Ordering> {
         Some(self.cmp(other))
     }
 }
@@ -941,10 +941,10 @@ impl PartialOrd for Interval {
 // `start` = `end`).
 #[cfg(test)]
 impl Ord for Interval{
-    fn cmp(&self, other:&Self) -> Ordering {
-        if      other.start + 1 < self.start   { Ordering::Greater }
-        else if other.start     > self.end + 1 { Ordering::Less }
-        else                                   { Ordering::Equal }
+    fn cmp(&self, other:&Self) -> std::cmp::Ordering {
+        if      other.start + 1 < self.start   { std::cmp::Ordering::Greater }
+        else if other.start     > self.end + 1 { std::cmp::Ordering::Less }
+        else                                   { std::cmp::Ordering::Equal }
     }
 }
 
@@ -1124,6 +1124,25 @@ mod benches {
         }
         b.iter(|| {
             v.sort()
+        });
+    }
+
+    /// # Results (ms)
+    ///
+    ///   10^5 | 0.04 |
+    ///   10^6 | 0.5  |
+    ///   10^7 | 7.5  |
+    ///   10^8 | 89.4 |
+
+    #[bench]
+    fn mode_rc_cell_num(b:&mut Bencher) {
+        let mut v = Rc::new(Cell::new(0));
+        let num = 1000;
+        b.iter(|| {
+            for i in 0 .. num {
+                if i % 2 == 0 { v.set(v.get() + 1) }
+                else          { v.set(v.get() - 1) }
+            }
         });
     }
 
