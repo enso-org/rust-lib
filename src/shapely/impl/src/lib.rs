@@ -65,7 +65,7 @@ macro_rules! replace {
 macro_rules! newtype_copy {
     ($( $(#$meta:tt)* $name:ident($type:ty); )*) => {$(
         $(#$meta)*
-        #[derive(Copy,Clone,CloneRef,Debug,Default,Display,From,Into)]
+        #[derive(Copy,Clone,CloneRef,Debug,Default,Display,Eq,From,Into,Ord,PartialOrd,PartialEq)]
         pub struct $name($type);
 
         impl Deref for $name {
