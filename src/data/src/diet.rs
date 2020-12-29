@@ -1114,11 +1114,10 @@ mod benches {
     ///   10^6 | 0.5  |
     ///   10^7 | 7.5  |
     ///   10^8 | 89.4 |
-
     #[bench]
     fn vec_sort_already_almost_sorted(b:&mut Bencher) {
         let mut v = Vec::<usize>::default();
-        let num = 1000;
+        let num = test::black_box(1000);
         for i in 0 .. num {
             v.push(num - i);
         }
@@ -1129,19 +1128,36 @@ mod benches {
 
     /// # Results (ms)
     ///
-    ///   10^5 | 0.04 |
-    ///   10^6 | 0.5  |
-    ///   10^7 | 7.5  |
-    ///   10^8 | 89.4 |
-
+    ///   10^8 | 8 |
+    ///
+    /// # Comparison to not using `Rc<Cell<...>>`
+    /// Note that there is NO DIFFERENCE between this and the version without `Rc<Cell<...>>`.
+    /// However, this may behave differently in real-world use case, so we need to make benchmarks
+    /// before using it in EnsoGL attribute manageent sytem. Read the docs of
+    /// [`ensogl::AttributeScopeData`] to learn more.
     #[bench]
     fn mode_rc_cell_num(b:&mut Bencher) {
         let v = Rc::new(Cell::new(0));
-        let num = 1000;
+        let num = test::black_box(1000_000_00);
         b.iter(|| {
             for i in 0 .. num {
                 if i % 2 == 0 { v.set(v.get() + 1) }
                 else          { v.set(v.get() - 1) }
+            }
+        });
+    }
+
+    /// # Results (ms)
+    ///
+    ///   10^8 | 8 |
+    #[bench]
+    fn mode_num(b:&mut Bencher) {
+        let mut v = 0;
+        let num = test::black_box(1000_000_00);
+        b.iter(|| {
+            for i in 0 .. num {
+                if i % 2 == 0 { v = v + 1 }
+                else          { v = v - 1 }
             }
         });
     }
