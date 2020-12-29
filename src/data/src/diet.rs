@@ -1,11 +1,31 @@
-//! Specialized, high-performance interval tree implementation.
+//! The DIET (Discrete Interval Encoding Tree) implementation.
+//!
+//! The discrete interval encoding tree is a structure for storing subsets of types having a total
+//! order and a predecessor and a successor function. Follow the link to learn more:
+//! https://web.engr.oregonstate.edu/~erwig/diet.
+//!
+//! # WARNING
+//! This implementation is not finished. It is provided as one of alternative solutions to the
+//! problem of efficient attribute memory management in EnsoGL. Read the docs of
+//! [`ensogl::AttributeScopeData`] to learn more. This implementation has the following
+//! shortcomings:
+//!
+//! 1. No implementation of merging of intervals in case they are not in the same layer. For
+//!    example, assuming a tree with values `1` and `7` in one layer, and value `3` in child-layer,
+//!    inserting the value `2` would not merge `1`,`2`, and `3` into a single [`Interval`].
+//!
+//! 2. No implementation of removing elements. This should be straightforward. The algorithm is
+//!    described here: https://en.wikipedia.org/wiki/B-tree#Algorithms.
+//!
+//! # Benchmarks
+//! This module contains a lot of benchmarks in order to compare different techniques of managing
+//! free indexes for the needs of efficient attribute memory management in EnsoGL. Read the docs of
+//! [`ensogl::AttributeScopeData`] to learn more.
+
+use crate::prelude::*;
 
 use std::mem::MaybeUninit;
 
-
-
-use crate::prelude::*;
-use std::cmp::Ordering;
 
 
 // ================
@@ -46,6 +66,12 @@ impl From<(usize,usize)> for Interval {
 
 
 
+// ============
+// === Tree ===
+// ============
+
+// === Helpers ===
+
 macro_rules! inc {
     (2)   => { 3 };
     (4)   => { 5 };
@@ -64,25 +90,29 @@ macro_rules! define_trees {
 ($( $modname:tt :: $name:tt($num:tt) )*) => {$(
 
 pub use $modname::$name;
+
+/// Module containing the specialized DIET implementation.
 pub mod $modname {
     use super::*;
 
-// =================
-// === Constants ===
-// =================
 
-const DATA_SIZE     : usize = $num;
-const CHILDREN_SIZE : usize = inc!{$num};
+// === Constants ===
+
+const DATA_SIZE : usize = $num;
 type DataArray           = [Interval;$num];
+// FIXME: Potential performance gain. We could initialize only the needed elements in this array
+//        by changing it to `[MaybeUninit<$name>;inc!{$num}]`.
 type ChildrenArray       = [$name;inc!{$num}];
 type ChildrenArrayUninit = [MaybeUninit<$name>;inc!{$num}];
 
 
+// === Main Impl ===
 
-// ============
-// === Tree ===
-// ============
-
+/// The DIET (Discrete Interval Encoding Tree) implementation.
+///
+/// The discrete interval encoding tree is a structure for storing subsets of types having a total
+/// order and a predecessor and a successor function. Follow the link to learn more:
+/// https://web.engr.oregonstate.edu/~erwig/diet.
 #[derive(Clone)]
 pub struct $name {
     pub (crate) data_count : usize,
@@ -90,77 +120,47 @@ pub struct $name {
     pub (crate) children   : Option<Box<ChildrenArray>>
 }
 
-impl Default for $name {
-
-    // Src https://doc.rust-lang.org/std/mem/union.MaybeUninit.html#initializing-an-array-element-by-element
-    #[allow(clippy::uninit_assumed_init)]
-    fn default() -> Self {
-        let data_count = 0;
-        let data       = unsafe { MaybeUninit::uninit().assume_init() };
-        let children   = None;
-        Self {data_count,data,children}
-    }
-}
-
-impl PartialEq for $name {
-    fn eq(&self, other:&Self) -> bool {
-        if self.data_count != other.data_count {
-            return false;
-        }
-        for i in 0..self.data_count {
-            if self.data[i] != other.data[i] {
-                return false;
-            }
-        }
-        match (&self.children,&other.children) {
-            (None,None) => {}
-            (Some(children1),Some(children2)) => {
-                for i in 0..self.data_count+1 {
-                    if children1[i] != children2[i] {
-                        return false;
-                    }
-                }
-            }
-            _ => return false
-        }
-        true
-    }
-}
-
-impl Eq for $name {}
-
-impl Debug for $name {
-    fn fmt(&self, f:&mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let mut repr = vec![];
-        if let Some(children) = &self.children {
-            for i in 0..self.data_count {
-                repr.push(format!("{:?}", children[i]));
-                repr.push(format!("{:?}", self.data[i]));
-            }
-            repr.push(format!("{:?}", children[self.data_count]));
-        } else {
-            for i in 0..self.data_count {
-                repr.push(format!("{:?}", self.data[i]));
-            }
-        }
-        write!(f, "$name({})", repr.join(","))
-    }
-}
-
 impl $name {
+
+    /// Create an empty data array. This function is safe because the intervals are build out of
+    /// [`uint`]s, which can be initialized from raw memory. Follow the link to learn more:
+    /// https://doc.rust-lang.org/std/mem/union.MaybeUninit.html.
+    #[allow(unsafe_code)]
+    pub (crate) fn empty_data_array() -> DataArray {
+        unsafe { MaybeUninit::uninit().assume_init() }
+    }
+
+    /// Create an empty data array. This function uses unsafe Rust to initialize big arrays element
+    /// by element. This is the official way of doing it. Follow the link to learn more:
+    /// https://doc.rust-lang.org/std/mem/union.MaybeUninit.html#initializing-an-array-element-by-element.
+    #[allow(unsafe_code)]
     pub (crate) fn empty_children_array() -> ChildrenArray {
-        // src https://doc.rust-lang.org/std/mem/union.MaybeUninit.html#initializing-an-array-element-by-element
         let mut children: ChildrenArrayUninit = unsafe { MaybeUninit::uninit().assume_init() };
         for elem in &mut children[..] { *elem = MaybeUninit::new(default()); }
         unsafe { mem::transmute::<_,ChildrenArray>(children) }
     }
 
+    /// Attaches uninitialized children array. Please note that this function is unsafe, as the
+    /// attached children array has to be initialized to work properly. Thus, it is the
+    /// responsibility of the user of this function to initialize it before it is used.
     fn unsafe_init_children(&mut self) -> &mut [$name] {
         self.children = Some(Box::new(Self::empty_children_array()));
         self.children.as_mut().unwrap().deref_mut()
     }
 
-    pub fn search(&self, t:usize) -> Result<usize,usize> {
+    /// Constructor.
+    pub fn new() -> Self {
+        let data_count = 0;
+        let data       = Self::empty_data_array();
+        let children   = None;
+        Self {data_count,data,children}
+    }
+
+    /// Perform linear search of the data layer for the provided value. Returns [`Ok`] containing
+    /// the index of the value or [`Err`] if the value was not found. In the later case, the result
+    /// will contain the index where the value should be inserted in order to keep the right
+    /// ordering.
+    fn search_data(&self, t:usize) -> Result<usize,usize> {
         let mut out = Err(self.data_count);
         for i in 0..self.data_count {
             let interval = &self.data[i];
@@ -170,18 +170,26 @@ impl $name {
         out
     }
 
-    fn split_leaves(&self, left_split_index:usize, right_split_index:usize) -> ($name,$name) {
+    /// Split the current node in two parts assuming that it is a leaf node (without children).
+    fn split_leaf(&self, left_split_index:usize, right_split_index:usize) -> ($name,$name) {
         let mut left = $name::default();
         left.data_count = left_split_index;
+        // FIXME: Potential performance gain. We are splitting the current data in two arrays. The
+        //        current data array will not be used anymore, so instead of creating a new array,
+        //        we could reuse the current one.
         left.data[0..left_split_index].copy_from_slice(&self.data[0..left_split_index]);
 
         let mut right = $name::default();
         right.data_count = DATA_SIZE - right_split_index;
+        // FIXME: Potential performance gain. We are splitting the current data in two arrays. The
+        //        current data array will not be used anymore, so instead of creating a new array,
+        //        we could reuse the current one.
         right.data[0..right.data_count].copy_from_slice(&self.data[right_split_index..]);
 
         (left,right)
     }
 
+    /// Split the current node in two parts assuming that it is not a leaf node (with children).
     fn split
     ( data              : &mut DataArray
     , children          : &mut ChildrenArray
@@ -192,34 +200,43 @@ impl $name {
         p_left.data_count = left_split_index;
         p_left.data[0..left_split_index].copy_from_slice(&data[0..left_split_index]);
         let mut left_children = Self::empty_children_array();
-        left_children[0..left_split_index+1].clone_from_slice(&children[0..left_split_index+1]);
+        // FIXME: Potential performance gain. We are splitting the current data in two arrays. The
+        //        current data array will not be used anymore, so instead of creating a new array,
+        //        we could reuse the current one. Moreover, the second half could take ownership
+        //        of the elements instead of cloning them.
+        left_children[0..=left_split_index].clone_from_slice(&children[0..=left_split_index]);
         p_left.children = Some(Box::new(left_children));
 
         let mut p_right = $name::default();
         p_right.data_count = DATA_SIZE - right_split_index;
         p_right.data[0..p_right.data_count].copy_from_slice(&data[right_split_index..]);
         let mut right_children = Self::empty_children_array();
-        right_children[0..p_right.data_count+1].clone_from_slice(&children[right_split_index..]);
+        // FIXME: Potential performance gain. We are splitting the current data in two arrays. The
+        //        current data array will not be used anymore, so instead of creating a new array,
+        //        we could reuse the current one. Moreover, the second half could take ownership
+        //        of the elements instead of cloning them.
+        right_children[0..=p_right.data_count].clone_from_slice(&children[right_split_index..]);
         p_right.children = Some(Box::new(right_children));
 
         (p_left,p_right)
     }
 
+    /// Insert a new value into this tree.
     pub fn insert(&mut self, t:usize) {
         if let Some((median,left,right)) = self.insert_internal(t) {
             let mut new_root = $name::default();
-            new_root.data_count = 1;
-            new_root.data[0] = median;
+            new_root.data_count   = 1;
+            new_root.data[0]      = median;
             let new_root_children = new_root.unsafe_init_children();
-            new_root_children[0] = left;
-            new_root_children[1] = right;
+            new_root_children[0]  = left;
+            new_root_children[1]  = right;
             *self = new_root;
         }
     }
 
-    pub fn insert_internal(&mut self, t:usize) -> Option<(Interval,$name,$name)> {
-        let pos = self.search(t);
-        match self.search(t) {
+    /// Internal helper for the `insert` function.
+    fn insert_internal(&mut self, t:usize) -> Option<(Interval,$name,$name)> {
+        match self.search_data(t) {
             Err(pos) => {
                 match &mut self.children {
                     None => {
@@ -231,17 +248,17 @@ impl $name {
                             None
                         } else {
                             let median_ix = DATA_SIZE / 2;
-                            let (median,(left,right)) = if (pos == median_ix) {
+                            let (median,(left,right)) = if pos == median_ix {
                                 // Insert Case (2)
-                                (Interval(t,t),self.split_leaves(median_ix,median_ix))
-                            } else if (pos < median_ix) {
+                                (Interval(t,t),self.split_leaf(median_ix,median_ix))
+                            } else if pos < median_ix {
                                 // Insert Case (3)
-                                let (mut left,right) = self.split_leaves(median_ix-1, median_ix);
+                                let (mut left,right) = self.split_leaf(median_ix-1, median_ix);
                                 left.insert_internal(t);
                                 (self.data[median_ix-1],(left,right))
                             } else {
                                 // Insert Case (4)
-                                let (left, mut right) = self.split_leaves(median_ix, median_ix+1);
+                                let (left, mut right) = self.split_leaf(median_ix, median_ix+1);
                                 right.insert_internal(t);
                                 (self.data[median_ix],(left,right))
                             };
@@ -260,13 +277,13 @@ impl $name {
                                 self.data_count += 1;
                                 None
                             } else {
-
-                                //zakomentowanie tego brancha usuwa stackoverflow, mimmo ze tu nigdy niewchodzimy
+                                // NOTE: Stack-overflow causing branch. Read docs of the module to
+                                //       learn more.
 
                                 let median_ix = DATA_SIZE / 2;
                                 let data      = &mut self.data;
 
-                                if (pos == median_ix) {
+                                if pos == median_ix {
                                     // Insert Case (5)
 
                                     let mut split = |l,r| Self::split(data,children,l,r);
@@ -279,7 +296,7 @@ impl $name {
 
                                     Some((median,p_left,p_right))
 
-                                } else if (pos < median_ix) {
+                                } else if pos < median_ix {
                                     // Insert Case (6)
 
                                     let left_split_ix  = median_ix - 1;
@@ -322,6 +339,7 @@ impl $name {
                     },
                 }
             },
+
             Ok(pos) => {
                 let interval = &mut self.data[pos];
                 if t < interval.start {
@@ -346,6 +364,7 @@ impl $name {
         }
     }
 
+    /// Convert this tree to vector of non-overlapping intervals in ascending order.
     pub fn to_vec(&self) -> Vec<Interval> {
         let mut v = vec![];
         if let Some(children) = &self.children {
@@ -363,8 +382,58 @@ impl $name {
     }
 }
 
-})*};}
+impl Default for $name {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
+impl PartialEq for $name {
+    fn eq(&self, other:&Self) -> bool {
+        if self.data_count != other.data_count {
+            return false;
+        }
+        for i in 0..self.data_count {
+            if self.data[i] != other.data[i] {
+                return false;
+            }
+        }
+        match (&self.children,&other.children) {
+            (None,None) => {}
+            (Some(children1),Some(children2)) => {
+                for i in 0..=self.data_count {
+                    if children1[i] != children2[i] {
+                        return false;
+                    }
+                }
+            }
+            _ => return false
+        }
+        true
+    }
+}
+
+impl Eq for $name {}
+
+impl Debug for $name {
+    fn fmt(&self, f:&mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut repr = vec![];
+        if let Some(children) = &self.children {
+            for i in 0..self.data_count {
+                repr.push(format!("{:?}", children[i]));
+                repr.push(format!("{:?}", self.data[i]));
+            }
+            repr.push(format!("{:?}", children[self.data_count]));
+        } else {
+            for i in 0..self.data_count {
+                repr.push(format!("{:?}", self.data[i]));
+            }
+        }
+        write!(f, "$name({})", repr.join(","))
+    }
+}
+
+})*};}
 
 define_trees!{
     tree2::Tree2(2)
@@ -377,236 +446,6 @@ define_trees!{
 
 
 
-// ===============================
-// === Tree4 Testing Utilities ===
-// ===============================
-
-trait FromSorted<T> {
-    fn from_sorted(t:T) -> Self;
-}
-
-trait LeafFromSorted<T> {
-    fn leaf_from_sorted(t:T) -> Self;
-}
-
-impl FromSorted<(Tree4,(usize,usize),Tree4)> for Tree4 {
-    fn from_sorted(t:(Tree4,(usize,usize),Tree4)) -> Self {
-        let mut tree = Tree4::default();
-        tree.data_count = 1;
-        tree.data[0] = Interval((t.1).0,(t.1).1);
-        let mut children = Self::empty_children_array();
-        children[0] = t.0;
-        children[1] = t.2;
-        tree.children = Some(Box::new(children));
-        tree
-    }
-}
-
-impl FromSorted<(Tree4,usize,Tree4)> for Tree4 {
-    fn from_sorted(t:(Tree4,usize,Tree4)) -> Self {
-        let mut tree = Tree4::default();
-        tree.data_count = 1;
-        tree.data[0] = Interval(t.1,t.1);
-        let mut children = Self::empty_children_array();
-        children[0] = t.0;
-        children[1] = t.2;
-        tree.children = Some(Box::new(children));
-        tree
-    }
-}
-
-impl FromSorted<(Tree4,usize,Tree4,usize,Tree4)> for Tree4 {
-    fn from_sorted(t:(Tree4,usize,Tree4,usize,Tree4)) -> Self {
-        let mut tree = Tree4::default();
-        tree.data_count = 2;
-        tree.data[0] = Interval(t.1,t.1);
-        tree.data[1] = Interval(t.3,t.3);
-        let mut children = Self::empty_children_array();
-        children[0] = t.0;
-        children[1] = t.2;
-        children[2] = t.4;
-        tree.children = Some(Box::new(children));
-        tree
-    }
-}
-
-impl FromSorted<(Tree4,usize,Tree4,usize,Tree4,usize,Tree4)> for Tree4 {
-    fn from_sorted(t:(Tree4,usize,Tree4,usize,Tree4,usize,Tree4)) -> Self {
-        let mut tree = Tree4::default();
-        tree.data_count = 3;
-        tree.data[0] = Interval(t.1,t.1);
-        tree.data[1] = Interval(t.3,t.3);
-        tree.data[2] = Interval(t.5,t.5);
-        let mut children = Self::empty_children_array();
-        children[0] = t.0;
-        children[1] = t.2;
-        children[2] = t.4;
-        children[3] = t.6;
-        tree.children = Some(Box::new(children));
-        tree
-    }
-}
-
-impl FromSorted<(Tree4,usize,Tree4,usize,Tree4,usize,Tree4,usize,Tree4)> for Tree4 {
-    fn from_sorted(t:(Tree4,usize,Tree4,usize,Tree4,usize,Tree4,usize,Tree4)) -> Self {
-        let mut tree = Tree4::default();
-        tree.data_count = 4;
-        tree.data[0] = Interval(t.1,t.1);
-        tree.data[1] = Interval(t.3,t.3);
-        tree.data[2] = Interval(t.5,t.5);
-        tree.data[3] = Interval(t.7,t.7);
-        let mut children = Self::empty_children_array();
-        children[0] = t.0;
-        children[1] = t.2;
-        children[2] = t.4;
-        children[3] = t.6;
-        children[4] = t.8;
-        tree.children = Some(Box::new(children));
-        tree
-    }
-}
-
-
-impl<T1> LeafFromSorted<(T1,)> for Tree4
-    where T1:Into<Interval> {
-    fn leaf_from_sorted(t:(T1,)) -> Self {
-        let mut tree = Tree4::default();
-        tree.data_count = 1;
-        tree.data[0] = t.0.into();
-        tree
-    }
-}
-
-impl<T1,T2> LeafFromSorted<(T1,T2)> for Tree4
-    where T1:Into<Interval>, T2:Into<Interval> {
-    fn leaf_from_sorted(t:(T1,T2)) -> Self {
-        let mut tree = Tree4::default();
-        tree.data_count = 2;
-        tree.data[0] = t.0.into();
-        tree.data[1] = t.1.into();
-        tree
-    }
-}
-
-impl<T1,T2,T3> LeafFromSorted<(T1,T2,T3)> for Tree4
-    where T1:Into<Interval>, T2:Into<Interval>, T3:Into<Interval> {
-    fn leaf_from_sorted(t:(T1,T2,T3)) -> Self {
-        let mut tree = Tree4::default();
-        tree.data_count = 3;
-        tree.data[0] = t.0.into();
-        tree.data[1] = t.1.into();
-        tree.data[2] = t.2.into();
-        tree
-    }
-}
-
-impl<T1,T2,T3,T4> LeafFromSorted<(T1,T2,T3,T4)> for Tree4
-    where T1:Into<Interval>, T2:Into<Interval>, T3:Into<Interval>, T4:Into<Interval> {
-    fn leaf_from_sorted(t:(T1,T2,T3,T4)) -> Self {
-        let mut tree = Tree4::default();
-        tree.data_count = 4;
-        tree.data[0] = t.0.into();
-        tree.data[1] = t.1.into();
-        tree.data[2] = t.2.into();
-        tree.data[3] = t.3.into();
-        tree
-    }
-}
-
-impl FromSorted<((usize,usize),)> for Tree4 {
-    fn from_sorted(t:((usize,usize),)) -> Self {
-        let mut tree = Tree4::default();
-        tree.data_count = 1;
-        tree.data[0] = Interval((t.0).0,(t.0).1);
-        tree
-    }
-}
-
-
-
-impl FromSorted<((usize,usize),(usize,usize))> for Tree4 {
-    fn from_sorted(t:((usize,usize),(usize,usize))) -> Self {
-        let mut tree = Tree4::default();
-        tree.data_count = 2;
-        tree.data[0] = Interval((t.0).0,(t.0).1);
-        tree.data[1] = Interval((t.1).0,(t.1).1);
-        tree
-    }
-}
-
-impl FromSorted<((usize,usize),(usize,usize),(usize,usize))> for Tree4 {
-    fn from_sorted(t:((usize,usize),(usize,usize),(usize,usize))) -> Self {
-        let mut tree = Tree4::default();
-        tree.data_count = 3;
-        tree.data[0] = Interval((t.0).0,(t.0).1);
-        tree.data[1] = Interval((t.1).0,(t.1).1);
-        tree.data[2] = Interval((t.2).0,(t.2).1);
-        tree
-    }
-}
-
-
-impl FromSorted<((usize,usize),(usize,usize),(usize,usize),(usize,usize))> for Tree4 {
-    fn from_sorted(t:((usize,usize),(usize,usize),(usize,usize),(usize,usize))) -> Self {
-        let mut tree = Tree4::default();
-        tree.data_count = 4;
-        tree.data[0] = Interval((t.0).0,(t.0).1);
-        tree.data[1] = Interval((t.1).0,(t.1).1);
-        tree.data[2] = Interval((t.2).0,(t.2).1);
-        tree.data[3] = Interval((t.3).0,(t.3).1);
-        tree
-    }
-}
-
-impl FromSorted<(usize,)> for Tree4 {
-    fn from_sorted(t:(usize,)) -> Self {
-        Self::from_sorted(((t.0,t.0),))
-    }
-}
-
-impl FromSorted<(usize,usize)> for Tree4 {
-    fn from_sorted(t:(usize,usize)) -> Self {
-        Self::from_sorted(((t.0,t.0),(t.1,t.1)))
-    }
-}
-
-impl FromSorted<(usize,usize,usize)> for Tree4 {
-    fn from_sorted(t:(usize,usize,usize)) -> Self {
-        Self::from_sorted(((t.0,t.0),(t.1,t.1),(t.2,t.2)))
-    }
-}
-
-impl FromSorted<(usize,usize,usize,usize)> for Tree4 {
-    fn from_sorted(t:(usize,usize,usize,usize)) -> Self {
-        Self::from_sorted(((t.0,t.0),(t.1,t.1),(t.2,t.2),(t.3,t.3)))
-    }
-}
-
-fn t<T>(t:T) -> Tree4
-where Tree4:FromSorted<T> {
-    <Tree4 as FromSorted<T>>::from_sorted(t)
-}
-
-fn l<T>(t:T) -> Tree4
-where Tree4:LeafFromSorted<T> {
-    <Tree4 as LeafFromSorted<T>>::leaf_from_sorted(t)
-}
-
-
-macro_rules! t {
-    ($($ts:tt)*) => {
-        t(($($ts)*,))
-    };
-}
-
-// macro_rules! l {
-//     ($($ts:tt)*) => {
-//         l(($($ts)*,))
-//     };
-// }
-
-//
-//
 // =============
 // === Tests ===
 // =============
@@ -614,6 +453,235 @@ macro_rules! t {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+
+    // === Tree4 Testing Utilities ===
+
+    trait FromSorted<T> {
+        fn from_sorted(t:T) -> Self;
+    }
+
+    trait LeafFromSorted<T> {
+        fn leaf_from_sorted(t:T) -> Self;
+    }
+
+    impl FromSorted<(Tree4,(usize,usize),Tree4)> for Tree4 {
+        fn from_sorted(t:(Tree4,(usize,usize),Tree4)) -> Self {
+            let mut tree = Tree4::default();
+            tree.data_count = 1;
+            tree.data[0] = Interval((t.1).0,(t.1).1);
+            let mut children = Self::empty_children_array();
+            children[0] = t.0;
+            children[1] = t.2;
+            tree.children = Some(Box::new(children));
+            tree
+        }
+    }
+
+    impl FromSorted<(Tree4,usize,Tree4)> for Tree4 {
+        fn from_sorted(t:(Tree4,usize,Tree4)) -> Self {
+            let mut tree = Tree4::default();
+            tree.data_count = 1;
+            tree.data[0] = Interval(t.1,t.1);
+            let mut children = Self::empty_children_array();
+            children[0] = t.0;
+            children[1] = t.2;
+            tree.children = Some(Box::new(children));
+            tree
+        }
+    }
+
+    impl FromSorted<(Tree4,usize,Tree4,usize,Tree4)> for Tree4 {
+        fn from_sorted(t:(Tree4,usize,Tree4,usize,Tree4)) -> Self {
+            let mut tree = Tree4::default();
+            tree.data_count = 2;
+            tree.data[0] = Interval(t.1,t.1);
+            tree.data[1] = Interval(t.3,t.3);
+            let mut children = Self::empty_children_array();
+            children[0] = t.0;
+            children[1] = t.2;
+            children[2] = t.4;
+            tree.children = Some(Box::new(children));
+            tree
+        }
+    }
+
+    impl FromSorted<(Tree4,usize,Tree4,usize,Tree4,usize,Tree4)> for Tree4 {
+        fn from_sorted(t:(Tree4,usize,Tree4,usize,Tree4,usize,Tree4)) -> Self {
+            let mut tree = Tree4::default();
+            tree.data_count = 3;
+            tree.data[0] = Interval(t.1,t.1);
+            tree.data[1] = Interval(t.3,t.3);
+            tree.data[2] = Interval(t.5,t.5);
+            let mut children = Self::empty_children_array();
+            children[0] = t.0;
+            children[1] = t.2;
+            children[2] = t.4;
+            children[3] = t.6;
+            tree.children = Some(Box::new(children));
+            tree
+        }
+    }
+
+    impl FromSorted<(Tree4,usize,Tree4,usize,Tree4,usize,Tree4,usize,Tree4)> for Tree4 {
+        fn from_sorted(t:(Tree4,usize,Tree4,usize,Tree4,usize,Tree4,usize,Tree4)) -> Self {
+            let mut tree = Tree4::default();
+            tree.data_count = 4;
+            tree.data[0] = Interval(t.1,t.1);
+            tree.data[1] = Interval(t.3,t.3);
+            tree.data[2] = Interval(t.5,t.5);
+            tree.data[3] = Interval(t.7,t.7);
+            let mut children = Self::empty_children_array();
+            children[0] = t.0;
+            children[1] = t.2;
+            children[2] = t.4;
+            children[3] = t.6;
+            children[4] = t.8;
+            tree.children = Some(Box::new(children));
+            tree
+        }
+    }
+
+
+    impl<T1> LeafFromSorted<(T1,)> for Tree4
+        where T1:Into<Interval> {
+        fn leaf_from_sorted(t:(T1,)) -> Self {
+            let mut tree = Tree4::default();
+            tree.data_count = 1;
+            tree.data[0] = t.0.into();
+            tree
+        }
+    }
+
+    impl<T1,T2> LeafFromSorted<(T1,T2)> for Tree4
+        where T1:Into<Interval>, T2:Into<Interval> {
+        fn leaf_from_sorted(t:(T1,T2)) -> Self {
+            let mut tree = Tree4::default();
+            tree.data_count = 2;
+            tree.data[0] = t.0.into();
+            tree.data[1] = t.1.into();
+            tree
+        }
+    }
+
+    impl<T1,T2,T3> LeafFromSorted<(T1,T2,T3)> for Tree4
+        where T1:Into<Interval>, T2:Into<Interval>, T3:Into<Interval> {
+        fn leaf_from_sorted(t:(T1,T2,T3)) -> Self {
+            let mut tree = Tree4::default();
+            tree.data_count = 3;
+            tree.data[0] = t.0.into();
+            tree.data[1] = t.1.into();
+            tree.data[2] = t.2.into();
+            tree
+        }
+    }
+
+    impl<T1,T2,T3,T4> LeafFromSorted<(T1,T2,T3,T4)> for Tree4
+        where T1:Into<Interval>, T2:Into<Interval>, T3:Into<Interval>, T4:Into<Interval> {
+        fn leaf_from_sorted(t:(T1,T2,T3,T4)) -> Self {
+            let mut tree = Tree4::default();
+            tree.data_count = 4;
+            tree.data[0] = t.0.into();
+            tree.data[1] = t.1.into();
+            tree.data[2] = t.2.into();
+            tree.data[3] = t.3.into();
+            tree
+        }
+    }
+
+    impl FromSorted<((usize,usize),)> for Tree4 {
+        fn from_sorted(t:((usize,usize),)) -> Self {
+            let mut tree = Tree4::default();
+            tree.data_count = 1;
+            tree.data[0] = Interval((t.0).0,(t.0).1);
+            tree
+        }
+    }
+
+
+
+    impl FromSorted<((usize,usize),(usize,usize))> for Tree4 {
+        fn from_sorted(t:((usize,usize),(usize,usize))) -> Self {
+            let mut tree = Tree4::default();
+            tree.data_count = 2;
+            tree.data[0] = Interval((t.0).0,(t.0).1);
+            tree.data[1] = Interval((t.1).0,(t.1).1);
+            tree
+        }
+    }
+
+    impl FromSorted<((usize,usize),(usize,usize),(usize,usize))> for Tree4 {
+        fn from_sorted(t:((usize,usize),(usize,usize),(usize,usize))) -> Self {
+            let mut tree = Tree4::default();
+            tree.data_count = 3;
+            tree.data[0] = Interval((t.0).0,(t.0).1);
+            tree.data[1] = Interval((t.1).0,(t.1).1);
+            tree.data[2] = Interval((t.2).0,(t.2).1);
+            tree
+        }
+    }
+
+
+    impl FromSorted<((usize,usize),(usize,usize),(usize,usize),(usize,usize))> for Tree4 {
+        fn from_sorted(t:((usize,usize),(usize,usize),(usize,usize),(usize,usize))) -> Self {
+            let mut tree = Tree4::default();
+            tree.data_count = 4;
+            tree.data[0] = Interval((t.0).0,(t.0).1);
+            tree.data[1] = Interval((t.1).0,(t.1).1);
+            tree.data[2] = Interval((t.2).0,(t.2).1);
+            tree.data[3] = Interval((t.3).0,(t.3).1);
+            tree
+        }
+    }
+
+    impl FromSorted<(usize,)> for Tree4 {
+        fn from_sorted(t:(usize,)) -> Self {
+            Self::from_sorted(((t.0,t.0),))
+        }
+    }
+
+    impl FromSorted<(usize,usize)> for Tree4 {
+        fn from_sorted(t:(usize,usize)) -> Self {
+            Self::from_sorted(((t.0,t.0),(t.1,t.1)))
+        }
+    }
+
+    impl FromSorted<(usize,usize,usize)> for Tree4 {
+        fn from_sorted(t:(usize,usize,usize)) -> Self {
+            Self::from_sorted(((t.0,t.0),(t.1,t.1),(t.2,t.2)))
+        }
+    }
+
+    impl FromSorted<(usize,usize,usize,usize)> for Tree4 {
+        fn from_sorted(t:(usize,usize,usize,usize)) -> Self {
+            Self::from_sorted(((t.0,t.0),(t.1,t.1),(t.2,t.2),(t.3,t.3)))
+        }
+    }
+
+    fn t<T>(t:T) -> Tree4
+    where Tree4:FromSorted<T> {
+        <Tree4 as FromSorted<T>>::from_sorted(t)
+    }
+
+    fn _l<T>(t:T) -> Tree4
+    where Tree4:LeafFromSorted<T> {
+        <Tree4 as LeafFromSorted<T>>::leaf_from_sorted(t)
+    }
+
+    macro_rules! t {
+        ($($ts:tt)*) => {
+            t(($($ts)*,))
+        };
+    }
+
+    macro_rules! _l {
+        ($($ts:tt)*) => {
+            l(($($ts)*,))
+        };
+    }
+
+
+    // === Tests ===
 
     fn intervals(bounds:&[(usize,usize)]) -> Vec<Interval> {
         bounds.iter().copied().map(|(a,b)|Interval(a,b)).collect()
@@ -901,6 +969,9 @@ impl Ord for Interval{
 /// 4. In case of `Tree16`, the insertion in ascending order is 50% slower than in descending order.
 ///    In case of `std::collections::BTreeSet`, insertion in ascending order is 40% slower than in
 ///    descending order.
+///
+/// 5. This implementation is 4x FASTER than the `lz_diet` crate.
+///
 #[cfg(test)]
 mod benches {
     use super::*;

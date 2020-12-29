@@ -4,17 +4,19 @@
 #![feature(trait_alias)]
 #![feature(test)]
 
-#![feature(set_stdio)]
+#![deny(unconditional_recursion)]
 
-#![warn(unsafe_code)]
 #![warn(missing_copy_implementations)]
 #![warn(missing_debug_implementations)]
 #![warn(missing_docs)]
+#![warn(trivial_casts)]
+#![warn(trivial_numeric_casts)]
+#![warn(unsafe_code)]
+#![warn(unused_import_braces)]
 
 pub mod hash_map_tree;
 pub mod index;
-pub mod interval_tree;
-pub mod interval_tree2;
+pub mod diet;
 pub mod opt_vec;
 pub mod text;
 
