@@ -1,3 +1,5 @@
+//! A dependency graph implementation optimized for sorting depth-indexed components.
+
 use crate::prelude::*;
 
 use std::collections::BTreeSet;
