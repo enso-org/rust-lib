@@ -227,9 +227,9 @@ impl<T:Default> Default for CloneCell<T> {
 
 
 
-// =================
-// === CloneCell ===
-// =================
+// ====================
+// === CloneRefCell ===
+// ====================
 
 #[derive(Debug)]
 pub struct CloneRefCell<T:?Sized> {
@@ -282,13 +282,12 @@ impl<T:Default> Default for CloneRefCell<T> {
 // === RefCell<Option<T>> Utils ===
 // ================================
 
-pub trait RefcellOptionOps<T> {
+pub trait RefCellOptionOps<T> {
     fn clear(&self);
     fn set(&self, val:T);
-    fn set_if_none(&self, val:T);
 }
 
-impl<T> RefcellOptionOps<T> for RefCell<Option<T>> {
+impl<T> RefCellOptionOps<T> for RefCell<Option<T>> {
     fn clear(&self) {
         *self.borrow_mut() = None;
     }
@@ -296,13 +295,67 @@ impl<T> RefcellOptionOps<T> for RefCell<Option<T>> {
     fn set(&self, val:T) {
         *self.borrow_mut() = Some(val);
     }
+}
 
-    fn set_if_none(&self, val:T) {
-        let mut ptr = self.borrow_mut();
-        if ptr.is_some() { panic!("The value was already set.") }
-        *ptr = Some(val)
+
+
+// ===============
+// === HasItem ===
+// ===============
+
+/// Type family for structures containing items.
+pub trait HasItem {
+    type Item;
+}
+
+pub trait ItemClone = HasItem where <Self as HasItem>::Item : Clone;
+
+impl<T> HasItem for Option<T>  { type Item = T; }
+impl<T> HasItem for Cell<T>    { type Item = T; }
+impl<T> HasItem for RefCell<T> { type Item = T; }
+
+
+
+// ===============================
+// === CellGetter / CellSetter ===
+// ===============================
+
+/// Generalization of the [`Cell::get`] mechanism. Can be used for anything similar to [`Cell`].
+pub trait CellGetter : HasItem {
+    fn get(&self) -> Self::Item;
+}
+
+/// Generalization of the [`Cell::set`] mechanism. Can be used for anything similar to [`Cell`].
+pub trait CellSetter : HasItem {
+    fn set(&self, value:Self::Item);
+}
+
+/// Generalization of modify utilities for structures similar to [`Cell`].
+pub trait CellProperty : CellGetter + CellSetter + ItemClone {
+    /// Updates the contained value using a function and returns the new value.
+    fn update<F>(&self, f:F) -> Self::Item where F : FnOnce(Self::Item) -> Self::Item {
+        let new_val = f(self.get());
+        self.set(new_val.clone());
+        new_val
+    }
+
+    /// Modifies the contained value using a function and returns the new value.
+    fn modify<F>(&self, f:F) -> Self::Item where F : FnOnce(&mut Self::Item) {
+        let mut new_val = self.get();
+        f(&mut new_val);
+        self.set(new_val.clone());
+        new_val
     }
 }
+
+impl<T:CellGetter+CellSetter+ItemClone> CellProperty for T {}
+
+
+
+// === Impls ===
+
+impl<T:Copy> CellGetter for Cell<T> { fn get(&self) -> Self::Item     { self.get() } }
+impl<T:Copy> CellSetter for Cell<T> { fn set(&self, value:Self::Item) { self.set(value) } }
 
 
 
