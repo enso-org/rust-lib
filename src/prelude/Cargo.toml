@@ -39,7 +39,8 @@ wasm-bindgen = { version = "=0.2.58" , features = ["nightly"] }
 # TODO: should be behind a flag, as the `nalgebra` package is pretty big and this crate would be
 #       also useful for projects which do not require `nalgebra`.
 nalgebra     = "0.21.1"
-# TODO[ao] anyhow 1.0.38 breaks clippy on our current rustc. Remove after switching to new Rust toolchain version.
+# TODO[ao] anyhow 1.0.38 breaks clippy on our current rustc. Remove after switching to new Rust 
+#       toolchain version.
 anyhow       = { version = "<=1.0.37" }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
