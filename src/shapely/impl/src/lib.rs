@@ -11,7 +11,7 @@
 #![feature(generators, generator_trait)]
 #![feature(specialization)]
 #![feature(type_ascription)]
-#![feature(overlapping_marker_traits)]
+#![feature(marker_trait_attr)]
 
 pub mod generator;
 pub mod shared;
@@ -124,7 +124,7 @@ macro_rules! extension_struct {
 
         ////// Has_NAME_Indirect //////
 
-        pub trait [<Has $name Indirect>] {}
+        #[marker] pub trait [<Has $name Indirect>] {}
 
         impl<T>
         [<Has $name Indirect>] for [<With $name>]<T> {}
@@ -294,7 +294,7 @@ impl<T: MarkerCtx_HasID> HasID for T {
 // === MarkerCtx_HasID ===
 
 #[allow(non_camel_case_types)]
-pub trait MarkerCtx_HasID {}
+#[marker] pub trait MarkerCtx_HasID {}
 
 impl<T> MarkerCtx_HasID for T
     where T: Deref, <T as Deref>::Target : HasID {}
