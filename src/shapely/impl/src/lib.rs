@@ -39,47 +39,78 @@ macro_rules! replace {
 /// including Copy, Clone, Debug, Default, Display, From, Into, Deref, and DerefMut.
 ///
 /// For the following input:
-/// ```compile_fail
-/// newtype_copy! {
-///     AttributeIndex(usize)
+/// ```ignore
+/// newtype_prim! {
+///     AttributeIndex(usize);
 /// }
 /// ```
 ///
 /// The following code is generated:
-/// ```compile_fail
-/// #[derive(Copy, Clone, Debug, Default, Display, From, Into)]
-/// pub struct AttributeIndex(usize);
+/// ```ignore
+/// #[derive(Copy,Clone,CloneRef,Debug,Default,Display,Eq,Hash,Ord,PartialOrd,PartialEq)]
+/// pub struct AttributeIndex {
+///     raw: usize
+/// }
+/// impl AttributeIndex {
+///     /// Constructor.
+///     pub fn new(raw:usize) -> Self {
+///         Self { raw }
+///     }
+/// }
 /// impl Deref for AttributeIndex {
 ///     type Target = usize;
 ///     fn deref(&self) -> &Self::Target {
-///         &self.0
+///         &self.raw
 ///     }
 /// }
 /// impl DerefMut for AttributeIndex {
 ///     fn deref_mut(&mut self) -> &mut Self::Target {
-///         &mut self.0
+///         &mut self.raw
 ///     }
 /// }
+/// impl From<usize>   for AttributeIndex { fn from(t:usize)   -> Self { Self::new(t)   } }
+/// impl From<&usize>  for AttributeIndex { fn from(t:&usize)  -> Self { Self::new(*t)  } }
+/// impl From<&&usize> for AttributeIndex { fn from(t:&&usize) -> Self { Self::new(**t) } }
+/// impl From<AttributeIndex>   for usize { fn from(t:AttributeIndex)   -> Self { t.raw } }
+/// impl From<&AttributeIndex>  for usize { fn from(t:&AttributeIndex)  -> Self { t.raw } }
+/// impl From<&&AttributeIndex> for usize { fn from(t:&&AttributeIndex) -> Self { t.raw } }
 /// ```
 #[macro_export]
-macro_rules! newtype_copy {
+macro_rules! newtype_prim {
     ($( $(#$meta:tt)* $name:ident($type:ty); )*) => {$(
         $(#$meta)*
-        #[derive(Copy,Clone,CloneRef,Debug,Default,Display,Eq,From,Into,Ord,PartialOrd,PartialEq)]
-        pub struct $name($type);
+        #[derive(Copy,Clone,CloneRef,Debug,Default,Display,Eq,Hash,Ord,PartialOrd,PartialEq)]
+        pub struct $name {
+            raw:$type
+        }
+
+        impl $name {
+            /// Constructor.
+            pub fn new(raw:$type) -> Self {
+                Self {raw}
+            }
+        }
 
         impl Deref for $name {
             type Target = $type;
             fn deref(&self) -> &Self::Target {
-                &self.0
+                &self.raw
             }
         }
 
         impl DerefMut for $name {
             fn deref_mut(&mut self) -> &mut Self::Target {
-                &mut self.0
+                &mut self.raw
             }
         }
+
+        impl From<$type>   for $name { fn from(t:$type)   -> Self { Self::new(t)   } }
+        impl From<&$type>  for $name { fn from(t:&$type)  -> Self { Self::new(*t)  } }
+        impl From<&&$type> for $name { fn from(t:&&$type) -> Self { Self::new(**t) } }
+
+        impl From<$name>   for $type { fn from(t:$name)   -> Self { t.raw } }
+        impl From<&$name>  for $type { fn from(t:&$name)  -> Self { t.raw } }
+        impl From<&&$name> for $type { fn from(t:&&$name) -> Self { t.raw } }
     )*}
 }
 

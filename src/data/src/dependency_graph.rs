@@ -124,10 +124,8 @@ impl DependencyGraph {
                     for ix2 in mem::take(&mut nodes[ix].out) {
                         let ins = &mut nodes[ix2].ins;
                         ins.remove_item(&ix);
-                        if ins.is_empty() {
-                            if non_orphans.remove(&ix2) {
-                                orphans.insert(ix2);
-                            }
+                        if ins.is_empty() && non_orphans.remove(&ix2) {
+                            orphans.insert(ix2);
                         }
                     }
                 }
@@ -193,6 +191,7 @@ pub fn assert_valid_sort(graph:&DependencyGraph, sorted:&[usize]) {
 
 /// The same as [`assert_valid_sort`] but with a shorter syntax. Learn more about it by looking at
 /// its usage below.
+#[cfg(test)]
 macro_rules! assert_valid_sort {
     ($($sorted:tt for {$($rules:tt)*})*) => {
         $({
@@ -288,136 +287,136 @@ mod benches {
 
 
 
-// =================================
-// === Sparse Dependency Sorting ===
-// =================================
-
-/// Sort the provided indexes slice according to the rules. Note, that in contrast to the
-/// [`DependencyGraph`], the rules are provided in a sparse fashion.
-#[allow(clippy::implicit_hasher)]
-pub fn sparse_depth_sort
-(indexes:&[usize], elem_above_elems:&HashMap<usize,Vec<usize>>) -> Vec<usize> {
-
-    // === Remove from `elem_above_elems` all indexes which are not present in `indexes` ===
-
-    let ids_set = HashSet::<usize>::from_iter(indexes.iter().copied());
-    let mut elem_above_elems = elem_above_elems.clone();
-    let mut missing = vec![];
-    for (elem,above_elems) in &mut elem_above_elems {
-        above_elems.retain(|id| ids_set.contains(id));
-        if above_elems.is_empty() {
-            missing.push(*elem);
-        }
-    }
-    for id in &missing {
-        elem_above_elems.remove(id);
-    }
-
-
-    // === Generate `elem_below_elems` map ===
-
-    let mut elem_below_elems : HashMap<usize,Vec<usize>> = HashMap::new();
-    for (above_id,below_ids) in &elem_above_elems {
-        for below_id in below_ids {
-            elem_below_elems.entry(*below_id).or_default().push(*above_id);
-        }
-    }
-
-
-    // === Sort indexes ===
-
-    let mut queue        = HashSet::<usize>::new();
-    let mut sorted       = vec![];
-    let mut newly_sorted = vec![];
-
-    for id in indexes {
-        if elem_above_elems.get(id).is_some() {
-            queue.insert(*id);
-        } else {
-            newly_sorted.push(*id);
-            while !newly_sorted.is_empty() {
-                let id = newly_sorted.pop().unwrap();
-                sorted.push(id);
-                elem_below_elems.remove(&id).for_each(|above_ids| {
-                    for above_id in above_ids {
-                        if let Some(lst) = elem_above_elems.get_mut(&above_id) {
-                            lst.remove_item(&id);
-                            if lst.is_empty() && queue.contains(&above_id) {
-                                queue.remove(&above_id);
-                                newly_sorted.push(above_id);
-                            }
-                            if lst.is_empty() {
-                                elem_above_elems.remove(&above_id);
-                            }
-                        }
-                    }
-                })
-            }
-        }
-    }
-    sorted
-}
-
-
-
-// =============
-// === Tests ===
-// =============
-
-#[cfg(test)]
-mod sparse_tests {
-    use super::*;
-
-    #[test]
-    fn identity_with_no_rules() {
-        assert_eq!( sparse_depth_sort(&vec![]      , &default()) , Vec::<usize>::new() );
-        assert_eq!( sparse_depth_sort(&vec![1]     , &default()) , vec![1] );
-        assert_eq!( sparse_depth_sort(&vec![1,3]   , &default()) , vec![1,3] );
-        assert_eq!( sparse_depth_sort(&vec![1,2,3] , &default()) , vec![1,2,3] );
-    }
-
-    #[test]
-    fn chained_rules() {
-        let mut rules = HashMap::<usize,Vec<usize>>::new();
-        rules.insert(1,vec![2]);
-        rules.insert(2,vec![3]);
-        assert_eq!( sparse_depth_sort(&vec![]      , &rules) , Vec::<usize>::new() );
-        assert_eq!( sparse_depth_sort(&vec![1]     , &rules) , vec![1] );
-        assert_eq!( sparse_depth_sort(&vec![1,2]   , &rules) , vec![2,1] );
-        assert_eq!( sparse_depth_sort(&vec![1,2,3] , &rules) , vec![3,2,1] );
-    }
-
-    #[test]
-    fn order_preserving() {
-        let mut rules = HashMap::<usize,Vec<usize>>::new();
-        rules.insert(1,vec![2]);
-        rules.insert(2,vec![3]);
-        assert_eq!( sparse_depth_sort(&vec![10,11,12]          , &rules) , vec![10,11,12] );
-        assert_eq!( sparse_depth_sort(&vec![10,1,11,12]        , &rules) , vec![10,1,11,12] );
-        assert_eq!( sparse_depth_sort(&vec![10,1,11,2,12]      , &rules) , vec![10,11,2,1,12] );
-        assert_eq!( sparse_depth_sort(&vec![10,1,11,2,12,3,13] , &rules) , vec![10,11,12,3,2,1,13] );
-    }
-}
-
-
-#[cfg(test)]
-mod sparse_benches {
-    use super::*;
-    use test::Bencher;
-
-    /// # Results (ms)
-    ///
-    ///   iters | time(ms) |
-    ///   10^3  | 0.5      |
-    ///   10^4  | 6.3      |
-    ///   10^5  | 101.5    |
-    #[bench]
-    fn bench_ascending(b:&mut Bencher) {
-        let iters     = 1_000;
-        let ins       = (0..iters).collect_vec();
-        let out       = ins.clone();
-        let mut rules = HashMap::<usize,Vec<usize>>::new();
-        for (i,j) in out.iter().zip(out.iter().skip(1)) { rules.insert(*j,vec![*i]); }
-        b.iter(move || assert_eq!(sparse_depth_sort(&ins,&rules),out));
-    }
-}
+// // =================================
+// // === Sparse Dependency Sorting ===
+// // =================================
+//
+// /// Sort the provided indexes slice according to the rules. Note, that in contrast to the
+// /// [`DependencyGraph`], the rules are provided in a sparse fashion.
+// #[allow(clippy::implicit_hasher)]
+// pub fn sparse_depth_sort
+// (indexes:&[usize], elem_above_elems:&HashMap<usize,Vec<usize>>) -> Vec<usize> {
+//
+//     // === Remove from `elem_above_elems` all indexes which are not present in `indexes` ===
+//
+//     let ids_set = HashSet::<usize>::from_iter(indexes.iter().copied());
+//     let mut elem_above_elems = elem_above_elems.clone();
+//     let mut missing = vec![];
+//     for (elem,above_elems) in &mut elem_above_elems {
+//         above_elems.retain(|id| ids_set.contains(id));
+//         if above_elems.is_empty() {
+//             missing.push(*elem);
+//         }
+//     }
+//     for id in &missing {
+//         elem_above_elems.remove(id);
+//     }
+//
+//
+//     // === Generate `elem_below_elems` map ===
+//
+//     let mut elem_below_elems : HashMap<usize,Vec<usize>> = HashMap::new();
+//     for (above_id,below_ids) in &elem_above_elems {
+//         for below_id in below_ids {
+//             elem_below_elems.entry(*below_id).or_default().push(*above_id);
+//         }
+//     }
+//
+//
+//     // === Sort indexes ===
+//
+//     let mut queue        = HashSet::<usize>::new();
+//     let mut sorted       = vec![];
+//     let mut newly_sorted = vec![];
+//
+//     for id in indexes {
+//         if elem_above_elems.get(id).is_some() {
+//             queue.insert(*id);
+//         } else {
+//             newly_sorted.push(*id);
+//             while !newly_sorted.is_empty() {
+//                 let id = newly_sorted.pop().unwrap();
+//                 sorted.push(id);
+//                 elem_below_elems.remove(&id).for_each(|above_ids| {
+//                     for above_id in above_ids {
+//                         if let Some(lst) = elem_above_elems.get_mut(&above_id) {
+//                             lst.remove_item(&id);
+//                             if lst.is_empty() && queue.contains(&above_id) {
+//                                 queue.remove(&above_id);
+//                                 newly_sorted.push(above_id);
+//                             }
+//                             if lst.is_empty() {
+//                                 elem_above_elems.remove(&above_id);
+//                             }
+//                         }
+//                     }
+//                 })
+//             }
+//         }
+//     }
+//     sorted
+// }
+//
+//
+//
+// // =============
+// // === Tests ===
+// // =============
+//
+// #[cfg(test)]
+// mod sparse_tests {
+//     use super::*;
+//
+//     #[test]
+//     fn identity_with_no_rules() {
+//         assert_eq!( sparse_depth_sort(&vec![]      , &default()) , Vec::<usize>::new() );
+//         assert_eq!( sparse_depth_sort(&vec![1]     , &default()) , vec![1] );
+//         assert_eq!( sparse_depth_sort(&vec![1,3]   , &default()) , vec![1,3] );
+//         assert_eq!( sparse_depth_sort(&vec![1,2,3] , &default()) , vec![1,2,3] );
+//     }
+//
+//     #[test]
+//     fn chained_rules() {
+//         let mut rules = HashMap::<usize,Vec<usize>>::new();
+//         rules.insert(1,vec![2]);
+//         rules.insert(2,vec![3]);
+//         assert_eq!( sparse_depth_sort(&vec![]      , &rules) , Vec::<usize>::new() );
+//         assert_eq!( sparse_depth_sort(&vec![1]     , &rules) , vec![1] );
+//         assert_eq!( sparse_depth_sort(&vec![1,2]   , &rules) , vec![2,1] );
+//         assert_eq!( sparse_depth_sort(&vec![1,2,3] , &rules) , vec![3,2,1] );
+//     }
+//
+//     #[test]
+//     fn order_preserving() {
+//         let mut rules = HashMap::<usize,Vec<usize>>::new();
+//         rules.insert(1,vec![2]);
+//         rules.insert(2,vec![3]);
+//         assert_eq!( sparse_depth_sort(&vec![10,11,12]          , &rules) , vec![10,11,12] );
+//         assert_eq!( sparse_depth_sort(&vec![10,1,11,12]        , &rules) , vec![10,1,11,12] );
+//         assert_eq!( sparse_depth_sort(&vec![10,1,11,2,12]      , &rules) , vec![10,11,2,1,12] );
+//         assert_eq!( sparse_depth_sort(&vec![10,1,11,2,12,3,13] , &rules) , vec![10,11,12,3,2,1,13] );
+//     }
+// }
+//
+//
+// #[cfg(test)]
+// mod sparse_benches {
+//     use super::*;
+//     use test::Bencher;
+//
+//     /// # Results (ms)
+//     ///
+//     ///   iters | time(ms) |
+//     ///   10^3  | 0.5      |
+//     ///   10^4  | 6.3      |
+//     ///   10^5  | 101.5    |
+//     #[bench]
+//     fn bench_ascending(b:&mut Bencher) {
+//         let iters     = 1_000;
+//         let ins       = (0..iters).collect_vec();
+//         let out       = ins.clone();
+//         let mut rules = HashMap::<usize,Vec<usize>>::new();
+//         for (i,j) in out.iter().zip(out.iter().skip(1)) { rules.insert(*j,vec![*i]); }
+//         b.iter(move || assert_eq!(sparse_depth_sort(&ins,&rules),out));
+//     }
+// }

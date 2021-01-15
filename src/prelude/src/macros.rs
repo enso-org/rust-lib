@@ -172,6 +172,22 @@ macro_rules! f_ {
     };
 }
 
+/// Variant of the `f` macro producing a lambda which drops its first and second arguments.
+#[macro_export]
+macro_rules! f__ {
+    ([$($name:ident),*] $($expr:tt)*) => {
+        f! { [$($name),*] (_,_) $($expr)*  }
+    };
+
+    ($name:ident . $($toks:tt)*) => {
+        f__! { [$name] $name . $($toks)* }
+    };
+
+    ( { $name:ident . $($toks:tt)* } ) => {
+        f__! { [$name] { $name . $($toks)* } }
+    };
+}
+
 /// A macro for use in situations where the code is unreachable.
 ///
 /// This macro will panic in debug builds, but in release builds it expands to
