@@ -1,6 +1,6 @@
 [package]
 name    = "enso-logger"
-version = "0.2.1"
+version = "0.2.2"
 authors = ["Enso Team <contact@luna-lang.org>"]
 edition = "2018"
 
