@@ -76,10 +76,9 @@ macro_rules! replace {
 /// impl From<&&AttributeIndex> for usize { fn from(t:&&AttributeIndex) -> Self { t.raw } }
 /// ```
 #[macro_export]
-macro_rules! newtype_prim {
+macro_rules! newtype_prim_no_derives {
     ($( $(#$meta:tt)* $name:ident($type:ty); )*) => {$(
         $(#$meta)*
-        #[derive(Copy,Clone,CloneRef,Debug,Default,Display,Eq,Hash,Ord,PartialOrd,PartialEq)]
         pub struct $name {
             raw:$type
         }
@@ -112,6 +111,45 @@ macro_rules! newtype_prim {
         impl From<&$name>  for $type { fn from(t:&$name)  -> Self { t.raw } }
         impl From<&&$name> for $type { fn from(t:&&$name) -> Self { t.raw } }
     )*}
+}
+
+#[macro_export]
+macro_rules! newtype_prim {
+    ($( $(#$meta:tt)* $name:ident($type:ty); )*) => {
+        $crate::newtype_prim_no_derives! {
+            $(
+                $(#$meta)*
+                #[derive(Copy,Clone,CloneRef,Debug,Default,Display,Eq,Hash,Ord,PartialOrd,PartialEq)]
+                $name($type);
+            )*
+        }
+    }
+}
+
+#[macro_export]
+macro_rules! newtype_prim_no_default {
+    ($( $(#$meta:tt)* $name:ident($type:ty); )*) => {
+        $crate::newtype_prim_no_derives! {
+            $(
+                $(#$meta)*
+                #[derive(Copy,Clone,CloneRef,Debug,Display,Eq,Hash,Ord,PartialOrd,PartialEq)]
+                $name($type);
+            )*
+        }
+    }
+}
+
+#[macro_export]
+macro_rules! newtype_prim_no_default_no_display {
+    ($( $(#$meta:tt)* $name:ident($type:ty); )*) => {
+        $crate::newtype_prim_no_derives! {
+            $(
+                $(#$meta)*
+                #[derive(Copy,Clone,CloneRef,Debug,Eq,Hash,Ord,PartialOrd,PartialEq)]
+                $name($type);
+            )*
+        }
+    }
 }
 
 #[macro_export]
