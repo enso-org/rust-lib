@@ -85,7 +85,7 @@ macro_rules! newtype_prim_no_derives {
 
         impl $name {
             /// Constructor.
-            pub fn new(raw:$type) -> Self {
+            pub const fn new(raw:$type) -> Self {
                 Self {raw}
             }
         }

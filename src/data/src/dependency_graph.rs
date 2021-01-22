@@ -20,6 +20,13 @@ pub struct Node<T> {
     pub out : Vec<T>,
 }
 
+impl<T> Node<T> {
+    /// Check whether this node does not have any input and output dependencies to other nodes.
+    pub fn is_empty(&self) -> bool {
+        self.ins.is_empty() && self.out.is_empty()
+    }
+}
+
 
 
 // =======================
@@ -50,11 +57,21 @@ impl<T:Clone+Eq+Hash+Ord> DependencyGraph<T> {
     }
 
     /// Insert a new dependency to the graph.
-    pub fn insert_dependency(&mut self, first:T, second:T) {
-        let first_key  = first.clone();
-        let second_key = second.clone();
-        self.nodes.entry(first_key).or_default().out.push(second);
-        self.nodes.entry(second_key).or_default().ins.push(first);
+    pub fn insert_dependency(&mut self, fst:T, snd:T) {
+        let fst_key = fst.clone();
+        let snd_key = snd.clone();
+        self.nodes.entry(fst_key).or_default().out.push(snd);
+        self.nodes.entry(snd_key).or_default().ins.push(fst);
+    }
+
+    /// Remove a dependency from the graph. Returns [`true`] if the dependency was found, or
+    /// [`false`] otherwise.
+    pub fn remove_dependency(&mut self, fst:T, snd:T) -> bool {
+        let fst_found = self.nodes.get_mut(&fst).map(|t| t.out.remove_item(&snd).is_some());
+        let snd_found = self.nodes.get_mut(&snd).map(|t| t.ins.remove_item(&fst).is_some());
+        if self.nodes.get(&fst).map(|t|t.is_empty()) == Some(true) { self.nodes.remove(&fst); }
+        if self.nodes.get(&snd).map(|t|t.is_empty()) == Some(true) { self.nodes.remove(&snd); }
+        fst_found == Some(true) && snd_found == Some(true)
     }
 
     /// Removes all dependencies from nodes whose indexes do not belong to the provided slice.
@@ -97,6 +114,7 @@ impl<T:Clone+Eq+Hash+Ord> DependencyGraph<T> {
                                     self.nodes.get_mut(&key2).for_each(|t| t.ins.remove_item(&key))
                                 }
                             }
+                            opt_key = keys_iter.next();
                         }
                     }
                 }
@@ -117,12 +135,23 @@ impl<T:Clone+Eq+Hash+Ord> DependencyGraph<T> {
         self.unchecked_topo_sort(keys.iter().cloned().sorted().rev().collect_vec())
     }
 
+    /// Just like [`topo_sort`], but consumes the current dependency graph instead of cloning it.
+    pub fn into_topo_sort(self, keys:&[T]) -> Vec<T> {
+        self.into_unchecked_topo_sort(keys.iter().cloned().sorted().rev().collect_vec())
+    }
+
     /// Just like [`topo_sort`], but the provided slice must be sorted in reversed order.
     pub fn unchecked_topo_sort(&self, rev_sorted_keys:Vec<T>) -> Vec<T> {
+        self.clone().into_unchecked_topo_sort(rev_sorted_keys)
+    }
+
+    /// Just like [`unchecked_topo_sort`], bbut consumes the current dependency graph instead of
+    /// cloning it.
+    pub fn into_unchecked_topo_sort(self, rev_sorted_keys:Vec<T>) -> Vec<T> {
         let mut sorted      = Vec::<T>::new();
         let mut orphans     = BTreeSet::<T>::new();
         let mut non_orphans = BTreeSet::<T>::new();
-        let this            = self.clone().unchecked_kept_only(&rev_sorted_keys);
+        let this            = self.unchecked_kept_only(&rev_sorted_keys);
         sorted.reserve_exact(rev_sorted_keys.len());
 
         let mut nodes = this.nodes;
@@ -162,6 +191,29 @@ impl<T:Clone+Eq+Hash+Ord> DependencyGraph<T> {
             }
         }
         sorted
+    }
+}
+
+
+impl<'a,T> IntoIterator for &'a DependencyGraph<T> {
+    type Item     = (&'a T, &'a Node<T>);
+    type IntoIter = std::collections::btree_map::Iter<'a,T,Node<T>>;
+    fn into_iter(self) -> std::collections::btree_map::Iter<'a,T,Node<T>> {
+        self.nodes.iter()
+    }
+}
+
+impl<T> IntoIterator for DependencyGraph<T> {
+    type Item     = (T,Node<T>);
+    type IntoIter = std::collections::btree_map::IntoIter<T,Node<T>>;
+    fn into_iter(self) -> std::collections::btree_map::IntoIter<T,Node<T>> {
+        self.nodes.into_iter()
+    }
+}
+
+impl<T:Ord> Extend<(T,Node<T>)> for DependencyGraph<T> {
+    fn extend<I:IntoIterator<Item=(T,Node<T>)>>(&mut self, iter:I) {
+        self.nodes.extend(iter)
     }
 }
 
@@ -269,7 +321,20 @@ mod tests {
             [0,1,2] for {0->0,0->1,0->2,1->0,1->1,1->2,2->0,2->1,2->2}
         }
     }
+
+    #[derive(Copy, Clone, CloneRef, Debug, Default, Display, Eq, Hash, Ord, PartialOrd, PartialEq)]
+    pub struct LayerId {
+        raw: usize
+    }
+    impl LayerId {
+        /// Constructor.
+        pub fn new(raw: usize) -> Self {
+            Self { raw }
+        }
+    }
 }
+
+// layer_depth_order! DependencyGraph { nodes: {LayerId { raw: 0 }: Node { ins: [], out: [LayerId { raw: 2 }] }, LayerId { raw: 2 }: Node { ins: [LayerId { raw: 0 }], out: [] }} }
 
 #[cfg(test)]
 mod benches {
