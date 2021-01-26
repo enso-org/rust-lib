@@ -11,6 +11,9 @@ use std::collections::BTreeSet;
 // ============
 
 /// A dependency graph node. Registers all incoming and outgoing edges.
+///
+/// Please note that the input and output edges are stored in a vector because in most cases there
+/// would be small amount of them (zero or one).
 #[derive(Clone,Debug)]
 #[derive(Derivative)]
 #[derivative(Default(bound=""))]
@@ -56,12 +59,18 @@ impl<T:Clone+Eq+Hash+Ord> DependencyGraph<T> {
         default()
     }
 
-    /// Insert a new dependency to the graph.
-    pub fn insert_dependency(&mut self, fst:T, snd:T) {
+    /// Insert a new dependency to the graph. Returns [`true`] if the insertion was successful
+    /// (the dependency was not present already), or [`false`] otherwise.
+    pub fn insert_dependency(&mut self, fst:T, snd:T) -> bool {
         let fst_key = fst.clone();
         let snd_key = snd.clone();
-        self.nodes.entry(fst_key).or_default().out.push(snd);
-        self.nodes.entry(snd_key).or_default().ins.push(fst);
+        let fst_out = &mut self.nodes.entry(fst_key).or_default().out;
+        let exists  = fst_out.contains(&snd);
+        if !exists {
+            fst_out.push(snd);
+            self.nodes.entry(snd_key).or_default().ins.push(fst);
+        }
+        !exists
     }
 
     /// Remove a dependency from the graph. Returns [`true`] if the dependency was found, or
@@ -333,8 +342,6 @@ mod tests {
         }
     }
 }
-
-// layer_depth_order! DependencyGraph { nodes: {LayerId { raw: 0 }: Node { ins: [], out: [LayerId { raw: 2 }] }, LayerId { raw: 2 }: Node { ins: [LayerId { raw: 0 }], out: [] }} }
 
 #[cfg(test)]
 mod benches {
