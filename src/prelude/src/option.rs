@@ -36,7 +36,7 @@ impl<T> OptionOps for Option<T> {
     }
 
     fn zip<U>(self, other:Option<U>) -> Option<(T,U)> {
-        self.zip_with(other, |a,b| (a,b))
+        OptionOps::zip_with(self,other, |a,b| (a,b))
     }
 
     fn zip_with<U,F,R>(self, other:Option<U>, f:F) -> Option<R>
