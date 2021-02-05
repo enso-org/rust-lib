@@ -572,11 +572,7 @@ pub fn split_to_lines(text:&str) -> impl Iterator<Item=String> + '_ {
 
 /// Returns slice without carriage return (also known as CR or `'\r'`) at line's end
 fn cut_cr_at_end_of_line(from:&str) -> &str {
-    if from.ends_with('\r') {
-        &from[..from.len()-1]
-    } else {
-        from
-    }
+    from.strip_suffix('\r').unwrap_or(from)
 }
 
 
