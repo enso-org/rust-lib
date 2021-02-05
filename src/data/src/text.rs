@@ -2,7 +2,6 @@
 
 use enso_prelude::*;
 
-use rustversion;
 use serde::Deserialize;
 use serde::Serialize;
 use std::ops::Add;
