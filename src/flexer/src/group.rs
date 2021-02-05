@@ -402,7 +402,7 @@ pub mod tests {
     fn group_registry_define_group() {
         let mut registry = Registry::default();
         registry.define_group("TEST_GROUP",None);
-        assert!(registry.all().iter().find(|g| g.name == "TEST_GROUP".to_string()).is_some());
+        assert!(registry.all().iter().any(|g| g.name == *"TEST_GROUP"));
     }
 
     #[test]
@@ -420,8 +420,8 @@ pub mod tests {
 
         let rules_1 = registry.rules_for(group_1_id);
         let rules_2 = registry.rules_for(group_2_id);
-        assert!(rules_1.iter().find(|r| ***r == Rule::new(pattern.clone(),"rule_1")).is_some());
-        assert!(rules_2.iter().find(|r| ***r == Rule::new(pattern.clone(),"rule_2")).is_some());
+        assert!(rules_1.iter().any(|r| **r == Rule::new(pattern.clone(),"rule_1")));
+        assert!(rules_2.iter().any(|r| **r == Rule::new(pattern.clone(),"rule_2")));
     }
 
     #[test]
@@ -446,8 +446,8 @@ pub mod tests {
 
         let rules = registry.rules_for(group_3_id);
         assert_eq!(rules.len(), 3);
-        assert!(rules.iter().find(|r| ***r == Rule::new(pattern_1.clone(),"rule_1")).is_some());
-        assert!(rules.iter().find(|r| ***r == Rule::new(pattern_2.clone(),"rule_2")).is_some());
-        assert!(rules.iter().find(|r| ***r == Rule::new(pattern_3.clone(),"rule_3")).is_some());
+        assert!(rules.iter().any(|r| **r == Rule::new(pattern_1.clone(),"rule_1")));
+        assert!(rules.iter().any(|r| **r == Rule::new(pattern_2.clone(),"rule_2")));
+        assert!(rules.iter().any(|r| **r == Rule::new(pattern_3.clone(),"rule_3")));
     }
 }

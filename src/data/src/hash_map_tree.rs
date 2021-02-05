@@ -448,9 +448,9 @@ mod tests {
             tree.set(path.clone(), *val)
         }
         let iter = tree.iter_mut();
-        iter.for_each(|(_, v)| *v = (*v) * 2);
+        iter.for_each(|(_, v)| *v *= 2);
         for (val, path) in values.iter().zip(&paths) {
-            let output = tree.get(path.clone()).unwrap().clone();
+            let output = *tree.get(path.clone()).unwrap();
             assert_eq!(output, val * 2);
         }
     }

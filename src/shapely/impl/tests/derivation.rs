@@ -42,13 +42,13 @@ fn derive_iterator_single_t() {
     // IntoIterator for &mut Val
     let mut pair = get_pair();
     for i in &mut pair {
-        *i = *i + 1
+        *i += 1
     }
     assert_eq!(pair, PairTT(5, 50));
 
     // iter_mut
     for i in pair.iter_mut() {
-        *i = *i + 1
+        *i += 1
     }
     assert_eq!(pair, PairTT(6, 51));
 

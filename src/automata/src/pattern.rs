@@ -133,7 +133,7 @@ impl Pattern {
             panic!("`codes` and `names`must have the same length.");
         }
         let mut codes = Vec::from(codes);
-        codes.sort();
+        codes.sort_unstable();
         codes.dedup();
         let pattern = codes.iter().tuple_windows().zip(names)
             .fold(Self::never(),|pat,((prev_code,next_code),name)| {

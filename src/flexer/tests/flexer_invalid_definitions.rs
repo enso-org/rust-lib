@@ -18,7 +18,6 @@ use enso_flexer::group::{Registry, Identifier};
 use enso_flexer::group;
 use enso_flexer::prelude::*;
 use enso_flexer::State;
-use enso_flexer;
 
 
 

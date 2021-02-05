@@ -28,7 +28,6 @@
 use enso_flexer::*;
 use enso_flexer::prelude::*;
 
-use enso_flexer;
 use enso_flexer::automata::pattern::Pattern;
 use enso_flexer::group::Registry;
 use enso_flexer::prelude::logger::Disabled;

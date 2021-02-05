@@ -11,7 +11,7 @@ use std::iter::FromIterator;
 use syn::visit::Visit;
 use syn::WhereClause;
 use syn::WherePredicate;
-use syn;
+
 
 
 

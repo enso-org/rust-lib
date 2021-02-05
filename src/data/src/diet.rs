@@ -1002,7 +1002,7 @@ mod benches {
     #[bench]
     fn bench_insert_descending(b:&mut Bencher) {
         b.iter(|| {
-            let max   = test::black_box(1000_00);
+            let max   = test::black_box(100_000);
             let mut v = Tree16::default();
             for i in 0 .. max {
                 v.insert((max-i)*2);
@@ -1068,7 +1068,7 @@ mod benches {
     fn bench_insert_ascending_std_usize(b:&mut Bencher) {
         b.iter(|| {
             let mut v = std::collections::BTreeSet::<usize>::default();
-            for i in 1 .. test::black_box(1000_000) {
+            for i in 1 .. test::black_box(1_000_000) {
                 v.insert(i*2);
             }
         });
@@ -1102,7 +1102,7 @@ mod benches {
             for i in 1 .. test::black_box(1000) {
                 v.push(i*2);
                 if i % sort_every == 0 {
-                    v.sort()
+                    v.sort_unstable()
                 }
             }
         });
@@ -1122,7 +1122,7 @@ mod benches {
             v.push(num - i);
         }
         b.iter(|| {
-            v.sort()
+            v.sort_unstable()
         });
     }
 
@@ -1138,7 +1138,7 @@ mod benches {
     #[bench]
     fn mode_rc_cell_num(b:&mut Bencher) {
         let v = Rc::new(Cell::new(0));
-        let num = test::black_box(1000_000_00);
+        let num = test::black_box(100_000_000);
         b.iter(|| {
             for i in 0 .. num {
                 if i % 2 == 0 { v.set(v.get() + 1) }
@@ -1153,11 +1153,11 @@ mod benches {
     #[bench]
     fn mode_num(b:&mut Bencher) {
         let mut v = 0;
-        let num = test::black_box(1000_000_00);
+        let num = test::black_box(100_000_000);
         b.iter(|| {
             for i in 0 .. num {
-                if i % 2 == 0 { v = v + 1 }
-                else          { v = v - 1 }
+                if i % 2 == 0 { v += 1 }
+                else          { v -= 1 }
             }
         });
     }
