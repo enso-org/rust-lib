@@ -229,6 +229,7 @@ impl<T:Ord> Extend<(T,Node<T>)> for DependencyGraph<T> {
 
 /// Utility macro allowing easy construction of the [`DependencyGraph`]. The following code:
 /// ```
+/// use crate::enso_data::dependency_graph;
 /// dependency_graph!(1->2, 2->3);
 /// ```
 /// will produce:
@@ -241,11 +242,11 @@ impl<T:Ord> Extend<(T,Node<T>)> for DependencyGraph<T> {
 /// }
 /// ```
 #[macro_export]
-macro_rules! dependency_graph {
+    macro_rules! dependency_graph {
     ($($fst:tt -> $snd:tt),* $(,)?) => {
         {
             #[allow(unused_mut)]
-            let mut graph = DependencyGraph::new();
+            let mut graph = $crate::dependency_graph::DependencyGraph::new();
             $(graph.insert_dependency($fst,$snd);)*
             graph
         }
