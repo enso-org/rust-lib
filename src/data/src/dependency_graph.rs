@@ -10,7 +10,9 @@ use std::collections::BTreeSet;
 // === Node ===
 // ============
 
-/// A dependency graph node. Registers all incoming and outgoing edges.
+/// A dependency graph node. Registers all incoming and outgoing edges. Incoming enges are
+/// considered sources of this node. They need to be sorted before this node when performing the
+/// topological sorting.
 ///
 /// Please note that the input and output edges are stored in a vector because in most cases there
 /// would be small amount of them (zero or one).
@@ -18,12 +20,12 @@ use std::collections::BTreeSet;
 #[derive(Derivative)]
 #[derivative(Default(bound=""))]
 #[allow(missing_docs)]
-pub struct Node<T> {
-    pub ins : Vec<T>,
-    pub out : Vec<T>,
+pub struct Node<Edge> {
+    pub ins : Vec<Edge>,
+    pub out : Vec<Edge>,
 }
 
-impl<T> Node<T> {
+impl<Edge> Node<Edge> {
     /// Check whether this node does not have any input and output dependencies to other nodes.
     pub fn is_empty(&self) -> bool {
         self.ins.is_empty() && self.out.is_empty()
@@ -38,13 +40,9 @@ impl<T> Node<T> {
 
 /// Dependency graph keeping track of [`Node`]s and their dependencies.
 ///
-/// The graph is not sparse, which means, that if there is a dependency to node of index `X`, the
-/// graph will contain at least `X+1` nodes. Instead, you are allowed to topologically sort only a
-/// subset of the graph.
-///
-/// This decision was dictated by the use cases of this structure. It is used to record dependencies
-/// of display elements, however, in case you remove a display element, its depth-sorting
-/// information should remain intact.
+/// The primary use case of this graph is topological sorting of dependencies. Please note that this
+/// graph implementation is not DAG, it can contain cycles. In case a cycle occurs it will be
+/// automatically broken on the lowest node id.
 #[derive(Clone)]
 #[derive(Derivative)]
 #[derivative(Default(bound="T:Eq+Hash+Ord"))]
@@ -61,79 +59,76 @@ impl<T:Clone+Eq+Hash+Ord> DependencyGraph<T> {
 
     /// Insert a new dependency to the graph. Returns [`true`] if the insertion was successful
     /// (the dependency was not present already), or [`false`] otherwise.
-    pub fn insert_dependency(&mut self, fst:T, snd:T) -> bool {
-        let fst_key = fst.clone();
-        let snd_key = snd.clone();
+    pub fn insert_dependency(&mut self, first:T, second:T) -> bool {
+        let fst_key = first.clone();
+        let snd_key = second.clone();
         let fst_out = &mut self.nodes.entry(fst_key).or_default().out;
-        let exists  = fst_out.contains(&snd);
+        let exists  = fst_out.contains(&second);
         if !exists {
-            fst_out.push(snd);
-            self.nodes.entry(snd_key).or_default().ins.push(fst);
+            fst_out.push(second);
+            self.nodes.entry(snd_key).or_default().ins.push(first);
         }
         !exists
     }
 
     /// Remove a dependency from the graph. Returns [`true`] if the dependency was found, or
     /// [`false`] otherwise.
-    pub fn remove_dependency(&mut self, fst:T, snd:T) -> bool {
-        let fst_found = self.nodes.get_mut(&fst).map(|t| t.out.remove_item(&snd).is_some());
-        let snd_found = self.nodes.get_mut(&snd).map(|t| t.ins.remove_item(&fst).is_some());
-        if self.nodes.get(&fst).map(|t|t.is_empty()) == Some(true) { self.nodes.remove(&fst); }
-        if self.nodes.get(&snd).map(|t|t.is_empty()) == Some(true) { self.nodes.remove(&snd); }
+    pub fn remove_dependency(&mut self, first:T, second:T) -> bool {
+        let fst_found = self.nodes.get_mut(&first).map(|t| t.out.remove_item(&second).is_some());
+        let snd_found = self.nodes.get_mut(&second).map(|t| t.ins.remove_item(&first).is_some());
+        if self.nodes.get(&first).map(|t|t.is_empty()) == Some(true) { self.nodes.remove(&first); }
+        if self.nodes.get(&second).map(|t|t.is_empty()) == Some(true) { self.nodes.remove(&second); }
         fst_found == Some(true) && snd_found == Some(true)
     }
 
-    /// Removes all dependencies from nodes whose indexes do not belong to the provided slice.
+    /// Removes all (incoming and outgoing) dependencies from nodes whose indexes do not belong to
+    /// the provided slice.
     pub fn keep_only(&mut self, keys:&[T]) {
-        self.unchecked_keep_only(&keys.iter().cloned().sorted().rev().collect_vec())
+        self.unchecked_keep_only_x(keys.iter().cloned().sorted())
     }
 
-    /// Removes all dependencies from nodes whose indexes do not belong to the provided slice.
+    /// Removes all (incoming and outgoing) dependencies from nodes whose indexes do not belong to
+    /// the provided slice.
     pub fn kept_only(mut self, keys:&[T]) -> Self {
         self.keep_only(keys);
         self
     }
 
-    /// Just like [`keep_only`], but the provided slice must be sorted in reversed order.
-    pub fn unchecked_keep_only(&mut self, rev_sorted_keys:&[T]) {
-        let mut keep         = rev_sorted_keys.to_vec();
-        let mut next_to_keep = keep.pop();
+    /// Just like [`keep_only`], but the provided slice must be sorted.
+    pub fn unchecked_keep_only_x(&mut self, sorted_keys:impl IntoIterator<Item=T>) {
+        let mut keep         = sorted_keys.into_iter();
+        let mut next_to_keep = keep.next();
         let     keys         = self.nodes.keys().cloned().collect_vec();
         let mut keys_iter    = keys.iter();
         let mut opt_key      = keys_iter.next();
-        loop {
-            match opt_key {
-                None => break,
-                Some(key) => {
-                    match next_to_keep.as_ref().map(|t| t.cmp(&key)) {
-                        Some(std::cmp::Ordering::Less) => {
-                            next_to_keep = keep.pop()
-                        },
-                        Some(std::cmp::Ordering::Equal) => {
-                            next_to_keep = keep.pop();
-                            opt_key      = keys_iter.next();
+        while let Some(key)  = opt_key {
+            match next_to_keep.as_ref().map(|t| t.cmp(&key)) {
+                Some(std::cmp::Ordering::Less) => {
+                    next_to_keep = keep.next()
+                },
+                Some(std::cmp::Ordering::Equal) => {
+                    next_to_keep = keep.next();
+                    opt_key      = keys_iter.next();
+                }
+                _ => {
+                    if let Some(node) = self.nodes.get_mut(&key) {
+                        let node = mem::take(node);
+                        for key2 in node.ins {
+                            self.nodes.get_mut(&key2).for_each(|t| t.out.remove_item(&key))
                         }
-                        _ => {
-                            if let Some(node) = self.nodes.get_mut(&key) {
-                                let node = mem::take(node);
-                                for key2 in node.ins {
-                                    self.nodes.get_mut(&key2).for_each(|t| t.out.remove_item(&key))
-                                }
-                                for key2 in node.out {
-                                    self.nodes.get_mut(&key2).for_each(|t| t.ins.remove_item(&key))
-                                }
-                            }
-                            opt_key = keys_iter.next();
+                        for key2 in node.out {
+                            self.nodes.get_mut(&key2).for_each(|t| t.ins.remove_item(&key))
                         }
                     }
+                    opt_key = keys_iter.next();
                 }
             }
         }
     }
 
-    /// Just like [`kept_only`], but the provided slice must be sorted in reversed order.
-    pub fn unchecked_kept_only(mut self, rev_sorted_keys:&[T]) -> Self {
-        self.unchecked_keep_only(rev_sorted_keys);
+    /// Just like [`kept_only`], but the provided slice must be sorted.
+    pub fn unchecked_kept_only_x(mut self, sorted_keys:impl IntoIterator<Item=T>) -> Self {
+        self.unchecked_keep_only_x(sorted_keys);
         self
     }
 
@@ -141,30 +136,30 @@ impl<T:Clone+Eq+Hash+Ord> DependencyGraph<T> {
     /// In case the graph is not a DAG, it will still be sorted by breaking cycles on elements with
     /// the smallest index.
     pub fn topo_sort(&self, keys:&[T]) -> Vec<T> {
-        self.unchecked_topo_sort(keys.iter().cloned().sorted().rev().collect_vec())
+        self.unchecked_topo_sort_x(keys.iter().cloned().sorted().collect_vec())
     }
 
     /// Just like [`topo_sort`], but consumes the current dependency graph instead of cloning it.
-    pub fn into_topo_sort(self, keys:&[T]) -> Vec<T> {
-        self.into_unchecked_topo_sort(keys.iter().cloned().sorted().rev().collect_vec())
+    pub fn into_topo_sort_x(self, keys:&[T]) -> Vec<T> {
+        self.into_unchecked_topo_sort_x(keys.iter().cloned().sorted().collect_vec())
     }
 
-    /// Just like [`topo_sort`], but the provided slice must be sorted in reversed order.
-    pub fn unchecked_topo_sort(&self, rev_sorted_keys:Vec<T>) -> Vec<T> {
-        self.clone().into_unchecked_topo_sort(rev_sorted_keys)
+    /// Just like [`topo_sort`], but the provided slice must be sorted.
+    pub fn unchecked_topo_sort_x(&self, sorted_keys:Vec<T>) -> Vec<T> {
+        self.clone().into_unchecked_topo_sort_x(sorted_keys)
     }
 
     /// Just like [`unchecked_topo_sort`], bbut consumes the current dependency graph instead of
     /// cloning it.
-    pub fn into_unchecked_topo_sort(self, rev_sorted_keys:Vec<T>) -> Vec<T> {
+    pub fn into_unchecked_topo_sort_x(self, sorted_keys:Vec<T>) -> Vec<T> {
         let mut sorted      = Vec::<T>::new();
         let mut orphans     = BTreeSet::<T>::new();
         let mut non_orphans = BTreeSet::<T>::new();
-        let this            = self.unchecked_kept_only(&rev_sorted_keys);
-        sorted.reserve_exact(rev_sorted_keys.len());
+        let this            = self.unchecked_kept_only_x(sorted_keys.iter().cloned());
+        sorted.reserve_exact(sorted_keys.len());
 
         let mut nodes = this.nodes;
-        for key in rev_sorted_keys.into_iter() {
+        for key in sorted_keys.into_iter() {
             let ins_empty = nodes.get(&key).map(|t|t.ins.is_empty()) != Some(false);
             if ins_empty { orphans.insert(key); }
             else         { non_orphans.insert(key); }
@@ -176,7 +171,7 @@ impl<T:Clone+Eq+Hash+Ord> DependencyGraph<T> {
                     match non_orphans.iter().next().cloned() {
                         None => break,
                         Some(ix) => {
-                            // NON DAG
+                            // Non DAG, contains cycle. Let's break them on the smallest node `ix`.
                             non_orphans.remove(&ix);
                             orphans.insert(ix);
                         }
@@ -328,17 +323,6 @@ mod tests {
             [0,1]   for {0->1,1->0}
             [0,1,2] for {0->1,1->2,2->0}
             [0,1,2] for {0->0,0->1,0->2,1->0,1->1,1->2,2->0,2->1,2->2}
-        }
-    }
-
-    #[derive(Copy, Clone, CloneRef, Debug, Default, Display, Eq, Hash, Ord, PartialOrd, PartialEq)]
-    pub struct LayerId {
-        raw: usize
-    }
-    impl LayerId {
-        /// Constructor.
-        pub fn new(raw: usize) -> Self {
-            Self { raw }
         }
     }
 }

@@ -80,6 +80,10 @@ impl<T,I:Index> OptVec<T,I> {
 
     /// Finds a free index and inserts the element. The index is re-used in case the array is sparse
     /// or is added in case of no free places.
+    ///
+    /// This code is very similar to [`insert_with_ix_`]. We duplicate it in order to be sure that
+    /// it will be correctly optimized as it is used in a very performance sensitive algorithms of
+    /// managing GPU buffers.
     pub fn insert_with_ix<S,F>(&mut self, f:F) -> (I,S)
     where F : FnOnce(I) -> (T,S) {
         match self.free_ixs.pop() {
@@ -100,6 +104,10 @@ impl<T,I:Index> OptVec<T,I> {
     /// Finds a free index and inserts the element. The index is re-used in case the array is sparse
     /// or is added in case of no free places. The used lambda does not return any value to the call
     /// scope of this function. See [`insert_with_ix`] for a more generic solution.
+    ///
+    /// This code is very similar to [`insert_with_ix`]. We duplicate it in order to be sure that
+    /// it will be correctly optimized as it is used in a very performance sensitive algorithms of
+    /// managing GPU buffers.
     pub fn insert_with_ix_<F>(&mut self, f:F) -> I
     where F : FnOnce(I) -> T {
         match self.free_ixs.pop() {

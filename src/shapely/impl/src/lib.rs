@@ -35,6 +35,45 @@ macro_rules! replace {
     ($a:tt,$($b:tt)*) => {$($b)*}
 }
 
+/// The same as [`newtype_prim`] but does not generate derive clauses.
+#[macro_export]
+macro_rules! newtype_prim_no_derives {
+    ($( $(#$meta:tt)* $name:ident($type:ty); )*) => {$(
+        $(#$meta)*
+        pub struct $name {
+            raw:$type
+        }
+
+        impl $name {
+            /// Constructor.
+            pub const fn new(raw:$type) -> Self {
+                Self {raw}
+            }
+        }
+
+        impl Deref for $name {
+            type Target = $type;
+            fn deref(&self) -> &Self::Target {
+                &self.raw
+            }
+        }
+
+        impl DerefMut for $name {
+            fn deref_mut(&mut self) -> &mut Self::Target {
+                &mut self.raw
+            }
+        }
+
+        impl From<$type>   for $name { fn from(t:$type)   -> Self { Self::new(t)   } }
+        impl From<&$type>  for $name { fn from(t:&$type)  -> Self { Self::new(*t)  } }
+        impl From<&&$type> for $name { fn from(t:&&$type) -> Self { Self::new(**t) } }
+
+        impl From<$name>   for $type { fn from(t:$name)   -> Self { t.raw } }
+        impl From<&$name>  for $type { fn from(t:&$name)  -> Self { t.raw } }
+        impl From<&&$name> for $type { fn from(t:&&$name) -> Self { t.raw } }
+    )*}
+}
+
 /// Generates a newtype wrapper for the provided types. It also generates a lot of impls,
 /// including Copy, Clone, Debug, Default, Display, From, Into, Deref, and DerefMut.
 ///
@@ -76,44 +115,6 @@ macro_rules! replace {
 /// impl From<&&AttributeIndex> for usize { fn from(t:&&AttributeIndex) -> Self { t.raw } }
 /// ```
 #[macro_export]
-macro_rules! newtype_prim_no_derives {
-    ($( $(#$meta:tt)* $name:ident($type:ty); )*) => {$(
-        $(#$meta)*
-        pub struct $name {
-            raw:$type
-        }
-
-        impl $name {
-            /// Constructor.
-            pub const fn new(raw:$type) -> Self {
-                Self {raw}
-            }
-        }
-
-        impl Deref for $name {
-            type Target = $type;
-            fn deref(&self) -> &Self::Target {
-                &self.raw
-            }
-        }
-
-        impl DerefMut for $name {
-            fn deref_mut(&mut self) -> &mut Self::Target {
-                &mut self.raw
-            }
-        }
-
-        impl From<$type>   for $name { fn from(t:$type)   -> Self { Self::new(t)   } }
-        impl From<&$type>  for $name { fn from(t:&$type)  -> Self { Self::new(*t)  } }
-        impl From<&&$type> for $name { fn from(t:&&$type) -> Self { Self::new(**t) } }
-
-        impl From<$name>   for $type { fn from(t:$name)   -> Self { t.raw } }
-        impl From<&$name>  for $type { fn from(t:&$name)  -> Self { t.raw } }
-        impl From<&&$name> for $type { fn from(t:&&$name) -> Self { t.raw } }
-    )*}
-}
-
-#[macro_export]
 macro_rules! newtype_prim {
     ($( $(#$meta:tt)* $name:ident($type:ty); )*) => {
         $crate::newtype_prim_no_derives! {
@@ -126,6 +127,7 @@ macro_rules! newtype_prim {
     }
 }
 
+/// The same as [`newtype_prim`] but does not generate [`Default`] derive clause.
 #[macro_export]
 macro_rules! newtype_prim_no_default {
     ($( $(#$meta:tt)* $name:ident($type:ty); )*) => {
@@ -139,6 +141,7 @@ macro_rules! newtype_prim_no_default {
     }
 }
 
+/// The same as [`newtype_prim`] but does not generate [`Default`] and [`Display`] derive clauses.
 #[macro_export]
 macro_rules! newtype_prim_no_default_no_display {
     ($( $(#$meta:tt)* $name:ident($type:ty); )*) => {
