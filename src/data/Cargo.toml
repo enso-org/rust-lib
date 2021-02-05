@@ -26,7 +26,3 @@ typenum = { version = "1.11.2" }
 [dev-dependencies]
 itertools = "0.9.0"
 criterion = "0.3"
-
-[[bench]]
-name = "bench_tree_query"
-harness = false
