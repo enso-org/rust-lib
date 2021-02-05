@@ -22,7 +22,7 @@ crate-type = ["cdylib", "rlib"]
 enso-shapely = { version = "0.1.2" , path = "../shapely/impl" }
 
 boolinator   = "2.4.0"
-derivative   = "1.0.3"
+derivative   = "2.2.0"
 derive_more  = "0.99.2"
 enclose      = "1.1.8"
 failure      = "0.1.5"

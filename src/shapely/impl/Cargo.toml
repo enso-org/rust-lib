@@ -24,7 +24,7 @@ default = []
 [dependencies]
 enso-shapely-macros = { version = "0.1.1" , path = "../macros" }
 paste               = { version = "0.1"                        }
-derivative          = { version = "1.0.3"                      }
+derivative          = { version = "2.2.0"                      }
 shrinkwraprs        = { version = "0.3.0"                      }
 rustversion         = { version = "1.0"                        }
 
