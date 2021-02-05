@@ -84,7 +84,7 @@ impl<T:Clone+Eq+Hash+Ord> DependencyGraph<T> {
     /// Removes all (incoming and outgoing) dependencies from nodes whose indexes do not belong to
     /// the provided slice.
     pub fn keep_only(&mut self, keys:&[T]) {
-        self.unchecked_keep_only_x(keys.iter().cloned().sorted())
+        self.unchecked_keep_only(keys.iter().cloned().sorted())
     }
 
     /// Removes all (incoming and outgoing) dependencies from nodes whose indexes do not belong to
@@ -95,7 +95,7 @@ impl<T:Clone+Eq+Hash+Ord> DependencyGraph<T> {
     }
 
     /// Just like [`keep_only`], but the provided slice must be sorted.
-    pub fn unchecked_keep_only_x(&mut self, sorted_keys:impl IntoIterator<Item=T>) {
+    pub fn unchecked_keep_only(&mut self, sorted_keys:impl IntoIterator<Item=T>) {
         let mut keep         = sorted_keys.into_iter();
         let mut next_to_keep = keep.next();
         let     keys         = self.nodes.keys().cloned().collect_vec();
@@ -127,8 +127,8 @@ impl<T:Clone+Eq+Hash+Ord> DependencyGraph<T> {
     }
 
     /// Just like [`kept_only`], but the provided slice must be sorted.
-    pub fn unchecked_kept_only_x(mut self, sorted_keys:impl IntoIterator<Item=T>) -> Self {
-        self.unchecked_keep_only_x(sorted_keys);
+    pub fn unchecked_kept_only(mut self, sorted_keys:impl IntoIterator<Item=T>) -> Self {
+        self.unchecked_keep_only(sorted_keys);
         self
     }
 
@@ -136,26 +136,26 @@ impl<T:Clone+Eq+Hash+Ord> DependencyGraph<T> {
     /// In case the graph is not a DAG, it will still be sorted by breaking cycles on elements with
     /// the smallest index.
     pub fn topo_sort(&self, keys:&[T]) -> Vec<T> {
-        self.unchecked_topo_sort_x(keys.iter().cloned().sorted().collect_vec())
+        self.unchecked_topo_sort(keys.iter().cloned().sorted().collect_vec())
     }
 
     /// Just like [`topo_sort`], but consumes the current dependency graph instead of cloning it.
-    pub fn into_topo_sort_x(self, keys:&[T]) -> Vec<T> {
-        self.into_unchecked_topo_sort_x(keys.iter().cloned().sorted().collect_vec())
+    pub fn into_topo_sort(self, keys:&[T]) -> Vec<T> {
+        self.into_unchecked_topo_sort(keys.iter().cloned().sorted().collect_vec())
     }
 
     /// Just like [`topo_sort`], but the provided slice must be sorted.
-    pub fn unchecked_topo_sort_x(&self, sorted_keys:Vec<T>) -> Vec<T> {
-        self.clone().into_unchecked_topo_sort_x(sorted_keys)
+    pub fn unchecked_topo_sort(&self, sorted_keys:Vec<T>) -> Vec<T> {
+        self.clone().into_unchecked_topo_sort(sorted_keys)
     }
 
     /// Just like [`unchecked_topo_sort`], bbut consumes the current dependency graph instead of
     /// cloning it.
-    pub fn into_unchecked_topo_sort_x(self, sorted_keys:Vec<T>) -> Vec<T> {
+    pub fn into_unchecked_topo_sort(self, sorted_keys:Vec<T>) -> Vec<T> {
         let mut sorted      = Vec::<T>::new();
         let mut orphans     = BTreeSet::<T>::new();
         let mut non_orphans = BTreeSet::<T>::new();
-        let this            = self.unchecked_kept_only_x(sorted_keys.iter().cloned());
+        let this            = self.unchecked_kept_only(sorted_keys.iter().cloned());
         sorted.reserve_exact(sorted_keys.len());
 
         let mut nodes = this.nodes;
