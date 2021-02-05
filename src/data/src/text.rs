@@ -2,14 +2,14 @@
 
 use enso_prelude::*;
 
+use rustversion;
+use serde::Deserialize;
+use serde::Serialize;
 use std::ops::Add;
 use std::ops::AddAssign;
 use std::ops::Range;
 use std::ops::Sub;
 use std::ops::SubAssign;
-use serde::Serialize;
-use serde::Deserialize;
-
 
 
 /// ======================================
@@ -570,7 +570,21 @@ pub fn split_to_lines(text:&str) -> impl Iterator<Item=String> + '_ {
     text.split('\n').map(cut_cr_at_end_of_line).map(|s| s.to_string())
 }
 
+// #TODO: Remove this version once the IDE main repo no longer needs it.
+// #TODO: See https://github.com/enso-org/ide/issues/1028 for the status of this.
 /// Returns slice without carriage return (also known as CR or `'\r'`) at line's end
+#[rustversion::before(2020-02-01)]
+fn cut_cr_at_end_of_line(from:&str) -> &str {
+    if from.ends_with('\r') {
+        &from[..from.len()-1]
+    } else {
+        from
+    }
+}
+
+// #TODO: Make this the default version once the above version is removed.
+/// Returns slice without carriage return (also known as CR or `'\r'`) at line's end
+#[rustversion::since(2020-02-01)]
 fn cut_cr_at_end_of_line(from:&str) -> &str {
     from.strip_suffix('\r').unwrap_or(from)
 }
