@@ -9,7 +9,7 @@ use enso_flexer::State;
 /// Generates the lexer engine and saves the result into the file `src/engine.rs`.
 ///
 /// The content of the generated file can be used with the `include!` macro.
-fn generate_engine() -> std::io::Result<()> {
+fn generate_engine() {
     let definition_path  = "../definition/src/lib.rs";
     let output_directory = "src/generated";
     let _                = std::fs::create_dir(output_directory);
@@ -24,9 +24,8 @@ fn generate_engine() -> std::io::Result<()> {
     lexer_def.read_to_string(&mut contents).expect("Unable to read lexer definition.");
     file.write_all(contents.as_bytes()).expect("Unable to write lexer definition.");
     file.write_all(engine.as_bytes()).expect("Unable to write lexer specialization.");
-    Ok(())
 }
 
-fn main() -> std::io::Result<()> {
+fn main() {
     generate_engine()
 }
