@@ -1,6 +1,6 @@
 [package]
 name    = "enso-data"
-version = "0.1.4"
+version = "0.1.5"
 authors = ["Enso Team <contact@luna-lang.org>"]
 edition = "2018"
 
@@ -19,7 +19,7 @@ publish = true
 crate-type = ["rlib", "cdylib"]
 
 [dependencies]
-enso-prelude = { version = "0.1.8" , path = "../prelude" }
+enso-prelude = { version = "0.1.10" , path = "../prelude" }
 serde        = { version = "1.0"  , features = ["derive"] }
 typenum = { version = "1.11.2" }
 

@@ -1,6 +1,6 @@
 [package]
 name    = "enso-prelude"
-version = "0.1.9"
+version = "0.1.10"
 authors = ["Enso Team <enso-dev@enso.org>"]
 edition = "2018"
 
@@ -39,12 +39,17 @@ wasm-bindgen = { version = "=0.2.58" , features = ["nightly"] }
 # TODO: should be behind a flag, as the `nalgebra` package is pretty big and this crate would be
 #       also useful for projects which do not require `nalgebra`.
 nalgebra     = "0.21.1"
-# TODO[ao] anyhow 1.0.38 breaks clippy on our current rustc. Remove after switching to new Rust 
-#       toolchain version (this is not our dependency).
+# TODO[ao] those dependencies at newest versions breaks clippy on our current rustc Remove after switching to
+#       new Rust toolchain version (those are not our dependencies).
 anyhow       = { version = "<=1.0.37" }
+bumpalo      = { version = "=3.4.0"  }
+object       = { version = "=0.21.1" }
+
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-backtrace = "0.3.53"
+# TODO[ao] the newest backtrace breaks compilation on our current rustc. Remove = once switched to the new Rust
+#      toolchain
+backtrace = "=0.3.53"
 
 [dependencies.web-sys]
 version = "0.3.4"
