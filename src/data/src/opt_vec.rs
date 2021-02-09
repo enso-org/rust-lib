@@ -75,12 +75,41 @@ impl<T,I:Index> OptVec<T,I> {
 impl<T,I:Index> OptVec<T,I> {
     /// Inserts the provided element to the vector. It reuses free indexes if any.
     pub fn insert(&mut self, item: T) -> I {
-        self.insert_with_ix(|_| item)
+        self.insert_with_ix_(|_| item)
     }
 
     /// Finds a free index and inserts the element. The index is re-used in case the array is sparse
     /// or is added in case of no free places.
-    pub fn insert_with_ix<F:FnOnce(I) -> T>(&mut self, f: F) -> I {
+    ///
+    /// This code is very similar to [`insert_with_ix_`]. We duplicate it in order to be sure that
+    /// it will be correctly optimized as it is used in a very performance sensitive algorithms of
+    /// managing GPU buffers.
+    pub fn insert_with_ix<S,F>(&mut self, f:F) -> (I,S)
+    where F : FnOnce(I) -> (T,S) {
+        match self.free_ixs.pop() {
+            None => {
+                let index = self.items.len().into();
+                let (item,out) = f(index);
+                self.items.push(Some(item));
+                (index,out)
+            }
+            Some(index) => {
+                let (item,out) = f(index);
+                self.items[index.into()] = Some(item);
+                (index,out)
+            }
+        }
+    }
+
+    /// Finds a free index and inserts the element. The index is re-used in case the array is sparse
+    /// or is added in case of no free places. The used lambda does not return any value to the call
+    /// scope of this function. See [`insert_with_ix`] for a more generic solution.
+    ///
+    /// This code is very similar to [`insert_with_ix`]. We duplicate it in order to be sure that
+    /// it will be correctly optimized as it is used in a very performance sensitive algorithms of
+    /// managing GPU buffers.
+    pub fn insert_with_ix_<F>(&mut self, f:F) -> I
+    where F : FnOnce(I) -> T {
         match self.free_ixs.pop() {
             None => {
                 let index = self.items.len().into();

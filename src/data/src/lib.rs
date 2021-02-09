@@ -1,8 +1,9 @@
 //! Library of general data structures.
 
 #![feature(associated_type_bounds)]
-#![feature(trait_alias)]
 #![feature(test)]
+#![feature(trait_alias)]
+#![feature(vec_remove_item)]
 
 #![deny(unconditional_recursion)]
 
@@ -14,6 +15,7 @@
 #![warn(unsafe_code)]
 #![warn(unused_import_braces)]
 
+pub mod dependency_graph;
 pub mod hash_map_tree;
 pub mod index;
 pub mod diet;
