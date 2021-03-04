@@ -16,7 +16,7 @@ impl      Message for String   { fn get(self) -> String { self } }
 impl      Message for &String  { fn get(self) -> String { self.clone() } }
 impl      Message for &&String { fn get(self) -> String { (*self).clone() } }
 impl<F,S> Message for F
-    where F:Fn()->S, S:Message {
+    where F:FnOnce()->S, S:Message {
     fn get(self) -> String {
         self().get()
     }
