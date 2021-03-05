@@ -38,7 +38,7 @@ mod js {
 pub struct JsConsole;
 
 impl<Levels> consumer::Definition<Levels,js_sys::Array> for JsConsole
-where Levels:ConsoleDispatchable {
+where Levels:Writer {
     fn consume(&mut self, event:Entry<Levels>, message:Option<js_sys::Array>) {
         match &event.content {
             entry::Content::Message(_) => {
@@ -61,18 +61,18 @@ where Levels:ConsoleDispatchable {
 
 /// Trait that is used to determine how the JS logging is dispatched for different log levels.
 /// Default blanket implementation uses `console.log`.
-pub trait ConsoleDispatchable {
+pub trait Writer {
     /// Write message using the appropriate console method.
     fn write_by_level(&self, message:&js_sys::Array);
 }
 
-impl<T> ConsoleDispatchable for T {
+impl<T> Writer for T {
     default fn write_by_level(&self, message:&js_sys::Array) {
         console::log(message)
     }
 }
 
-impl ConsoleDispatchable for crate::entry::level::DefaultLevels {
+impl Writer for crate::entry::level::DefaultLevels {
     fn write_by_level(&self, message:&js_sys::Array) {
         use crate::entry::level::DefaultLevels::*;
         match *self {
