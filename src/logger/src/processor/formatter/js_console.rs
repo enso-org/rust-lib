@@ -23,7 +23,7 @@ impl formatter::Output for JsConsole {
 impl JsConsole {
     fn format_color(path:&str, color:Option<&str>, msg:String) -> js_sys::Array {
         let msg  = format!("%c {} %c {}",path,msg).into();
-        let css1 = "background:dimgray;border-radius:4px".into();
+        let css1 = "color:#ffffff;background:dimgray;border-radius:4px".into();
         let css2 = color.map(|c|iformat!("color:{c}")).unwrap_or_default().into();
         let arr  = js_sys::Array::new();
         arr.push(&msg);

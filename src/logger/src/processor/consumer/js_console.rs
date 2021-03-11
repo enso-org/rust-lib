@@ -37,12 +37,13 @@ mod js {
 #[derive(Clone,Copy,Debug,Default)]
 pub struct JsConsole;
 
-impl<Levels> consumer::Definition<Levels,js_sys::Array> for JsConsole {
+impl<Levels> consumer::Definition<Levels,js_sys::Array> for JsConsole
+where Levels:Writer {
     fn consume(&mut self, event:Entry<Levels>, message:Option<js_sys::Array>) {
         match &event.content {
             entry::Content::Message(_) => {
                 if let Some(msg) = message {
-                    console::log(&msg);
+                    event.level.write_by_level(&msg)
                 }
             },
             entry::Content::GroupBegin(group) => {
@@ -54,6 +55,32 @@ impl<Levels> consumer::Definition<Levels,js_sys::Array> for JsConsole {
             entry::Content::GroupEnd => {
                 js::console_group_end()
             }
+        }
+    }
+}
+
+/// Trait that is used to determine how the JS logging is dispatched for different log levels.
+/// Default blanket implementation uses `console.log`.
+pub trait Writer {
+    /// Write message using the appropriate console method.
+    fn write_by_level(&self, message:&js_sys::Array);
+}
+
+impl<T> Writer for T {
+    default fn write_by_level(&self, message:&js_sys::Array) {
+        console::log(message)
+    }
+}
+
+impl Writer for crate::entry::level::DefaultLevels {
+    fn write_by_level(&self, message:&js_sys::Array) {
+        use crate::entry::level::DefaultLevels::*;
+        match *self {
+            Trace   => console::trace(message),
+            Debug   => console::debug(message),
+            Info    => console::info(message),
+            Warning => console::warn(message),
+            Error   => console::error(message),
         }
     }
 }
