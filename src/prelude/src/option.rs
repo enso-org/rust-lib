@@ -7,9 +7,6 @@ pub trait OptionOps {
     fn map_ref      <U,F>   (&self , f:F) -> Option<U> where F : FnOnce(&Self::Item) -> U;
     fn for_each     <U,F>   (self  , f:F)              where F : FnOnce(Self::Item)  -> U;
     fn for_each_ref <U,F>   (&self , f:F)              where F : FnOnce(&Self::Item) -> U;
-    fn zip          <U>     (self  , other:Option<U>)      -> Option<(Self::Item,U)>;
-    fn zip_with     <U,F,R> (self  , other:Option<U>, f:F) -> Option<R>
-        where F:FnOnce(Self::Item,U) -> R;
     /// Returns true if option contains Some with value matching given predicate.
     fn contains_if  <F>   (&self, f:F) -> bool      where F : FnOnce(&Self::Item) -> bool;
 }
@@ -33,15 +30,6 @@ impl<T> OptionOps for Option<T> {
 
     fn for_each_ref<U,F>(&self, f:F) where F : FnOnce(&Self::Item) -> U {
         if let Some(x) = self { f(x); }
-    }
-
-    fn zip<U>(self, other:Option<U>) -> Option<(T,U)> {
-        OptionOps::zip_with(self,other, |a,b| (a,b))
-    }
-
-    fn zip_with<U,F,R>(self, other:Option<U>, f:F) -> Option<R>
-    where F:FnOnce(T,U) -> R {
-        Some(f(self?,other?))
     }
 
     fn contains_if<F>(&self, f:F) -> bool where F : FnOnce(&Self::Item) -> bool {
