@@ -14,13 +14,15 @@ fn generate_engine() {
     let output_directory = "src/generated";
     let _                = std::fs::create_dir(output_directory);
     let output_path      = "src/generated/engine.rs";
-    let definition_error = format!("The lexer definition should exist at {}.",definition_path);
-    let output_error     = format!("Cannot open output file at {}.",output_path);
-    let mut lexer_def    = File::open(definition_path).unwrap_or_else(|_| { panic!(definition_error) });
-    let mut contents     = String::new();
-    let mut file         = File::create(output_path).unwrap_or_else(|_| { panic!(output_error) });
-    let lexer            = TestLexer::define();
-    let engine           = lexer.specialize().unwrap();
+    let mut lexer_def    = File::open(definition_path).unwrap_or_else(|_| {
+        panic!("The lexer definition should exist at {}.",definition_path)
+    });
+    let mut contents = String::new();
+    let mut file     = File::create(output_path).unwrap_or_else(|_| {
+        panic!("Cannot open output file at {}.",output_path)
+    });
+    let lexer  = TestLexer::define();
+    let engine = lexer.specialize().unwrap();
     lexer_def.read_to_string(&mut contents).expect("Unable to read lexer definition.");
     file.write_all(contents.as_bytes()).expect("Unable to write lexer definition.");
     file.write_all(engine.as_bytes()).expect("Unable to write lexer specialization.");

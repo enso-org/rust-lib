@@ -1,5 +1,5 @@
 #![feature(generators)]
-#![feature(type_alias_impl_trait)]
+#![feature(min_type_alias_impl_trait)]
 
 use enso_shapely::*;
 

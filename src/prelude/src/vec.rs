@@ -27,6 +27,10 @@ pub trait VecOps {
 
     /// Self but reversed.
     fn reversed(self) -> Self;
+
+    /// Remove first element equal to `item` and returns it if any.
+    fn remove_item(&mut self, item:&Self::Item) -> Option<Self::Item>
+    where Self::Item : PartialEq<Self::Item>;
 }
 
 impl<T> VecOps for Vec<T> {
@@ -59,6 +63,12 @@ impl<T> VecOps for Vec<T> {
     fn reversed(mut self) -> Self {
         self.reverse();
         self
+    }
+
+    fn remove_item(&mut self, item:&T) -> Option<T>
+    where T: PartialEq<T> {
+        let index = self.iter().position(|x| *x == *item);
+        index.map(|i| self.remove(i))
     }
 }
 

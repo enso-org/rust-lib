@@ -3,7 +3,6 @@
 #![feature(associated_type_bounds)]
 #![feature(test)]
 #![feature(trait_alias)]
-#![feature(vec_remove_item)]
 
 #![deny(unconditional_recursion)]
 

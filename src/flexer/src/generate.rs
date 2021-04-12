@@ -124,9 +124,7 @@ pub fn run_current_state_function() -> ImplItem {
                         Err(enso_flexer::prelude::reader::Error::EndOfGroup) => {
                             let current_state = self.current_state();
                             let group_name    = self.groups().group(current_state).name.as_str();
-                            let err           = format!("Missing rules for state {}.", group_name);
-                            // error!(self.logger,|| err.as_str());
-                            panic!(err)
+                            panic!("Missing rules for state {}.", group_name)
                         }
                         Err(_) => {
                             // error!(self.logger,"Unexpected error!");
