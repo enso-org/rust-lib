@@ -5,6 +5,7 @@
 // This library is in a very early stage. It will be refactored and improved 
 // soon. It should not be reviewed now.
 
+#![allow(incomplete_features)] // To be removed, see: https://github.com/enso-org/ide/issues/1559
 #![warn(unsafe_code)]
 #![warn(missing_copy_implementations)]
 #![warn(missing_debug_implementations)]
