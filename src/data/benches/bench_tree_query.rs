@@ -1,6 +1,6 @@
 //! This file contains benchmarks of the query performance for the HashTree structure.
 
-use enso_prelude::HashTree;
+use enso_data::hash_map_tree::HashMapTree;
 use itertools::*;
 
 use criterion::black_box;
@@ -25,10 +25,10 @@ fn bench_config() -> Criterion {
 }
 
 /// Create a tree where each node has `width` branches, up to a maximum depth of `depth`.
-fn gen_tree(width:usize, depth:usize) -> HashTree<usize,usize> {
-    let mut tree = HashTree::<usize,usize>::empty();
+fn gen_tree(width:usize, depth:usize) -> HashMapTree<usize,usize> {
+    let mut tree = HashMapTree::<usize,usize>::default();
     let paths    = (0..width).permutations(depth);
-    paths.into_iter().for_each(|p| tree.insert(p.clone(),1));
+    paths.into_iter().for_each(|p| tree.set(p.clone(),1));
     tree
 }
 
@@ -46,7 +46,7 @@ fn gen_tree(width:usize, depth:usize) -> HashTree<usize,usize> {
 fn wide_tree(c:&mut Criterion) {
     let tree             = gen_tree(10,5);
     let query:Vec<usize> = vec![1,3,2,5,9];
-    c.bench_function("Wide Tree",|b| b.iter(|| tree.get_value(black_box(query.clone()))));
+    c.bench_function("Wide Tree",|b| b.iter(|| tree.get(black_box(query.clone()))));
 }
 
 /// A benchmark that tests querying a tree that has 5 branches at each node, and each node chain
@@ -54,7 +54,7 @@ fn wide_tree(c:&mut Criterion) {
 fn deep_tree(c:&mut Criterion) {
     let tree             = gen_tree(5,10);
     let query:Vec<usize> = vec![1,2,4,1,3];
-    c.bench_function("Deep Tree",|b| b.iter(|| tree.get_value(black_box(query.clone()))));
+    c.bench_function("Deep Tree",|b| b.iter(|| tree.get(black_box(query.clone()))));
 }
 
 criterion_group! {
@@ -75,7 +75,7 @@ fn map(c:&mut Criterion) {
     let tree = gen_tree(10,5);
     c.bench_function("Map",|b| b.iter(|| {
         let tree = tree.clone();
-        black_box(tree.map(black_box(|v| v*2)));
+        black_box(tree.iter().map(black_box(|(k,v)| (k,v*2))).collect::<HashMapTree<_,_>>());
     }));
 }
 
@@ -83,7 +83,7 @@ fn map_in_place(c:&mut Criterion) {
     let tree = gen_tree(10,5);
     c.bench_function("Map in Place",|b| b.iter(|| {
         let mut tree = tree.clone();
-        black_box(tree.map_in_place(black_box(|v:&mut usize| (*v)*2)));
+        black_box(tree.iter_mut().for_each(black_box(|(_,v):(Vec<&usize>,&mut usize)| *v *= 2)));
     }));
 }
 
