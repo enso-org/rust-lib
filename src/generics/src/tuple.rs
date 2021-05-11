@@ -383,116 +383,116 @@ for hlist::ty![T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11] {
 // === Conversion HList -> Tuple ===
 // =================================
 
-impl Into<()>
-for hlist::ty![] {
+impl From<hlist::ty![]>
+for () {
     #[inline(always)]
-    fn into(self) {}
+    fn from(_:hlist::ty![]) -> Self {}
 }
 
-impl<T0> Into<(T0,)>
-for hlist::ty![T0] {
+impl<T0> From<hlist::ty![T0]>
+for (T0,) {
     #[inline(always)]
-    fn into(self) -> (T0,) {
-        let hlist::pat![t0] = self;
+    fn from(value:hlist::ty![T0,]) -> Self {
+        let hlist::pat![t0] = value;
         (t0,)
     }
 }
 
-impl<T0,T1> Into<(T0,T1)>
-for hlist::ty![T0,T1] {
+impl<T0,T1> From<hlist::ty![T0,T1]>
+for (T0,T1) {
     #[inline(always)]
-    fn into(self) -> (T0,T1) {
-        let hlist::pat![t0,t1] = self;
+    fn from(value:hlist::ty![T0,T1]) -> Self {
+        let hlist::pat![t0,t1] = value;
         (t0,t1)
     }
 }
 
-impl<T0,T1,T2> Into<(T0,T1,T2)>
-for hlist::ty![T0,T1,T2] {
+impl<T0,T1,T2> From<hlist::ty![T0,T1,T2]>
+for (T0,T1,T2) {
     #[inline(always)]
-    fn into(self) -> (T0,T1,T2) {
-        let hlist::pat![t0,t1,t2] = self;
+    fn from(value:hlist::ty![T0,T1,T2]) -> Self {
+        let hlist::pat![t0,t1,t2] = value;
         (t0,t1,t2)
     }
 }
 
-impl<T0,T1,T2,T3> Into<(T0,T1,T2,T3)>
-for hlist::ty![T0,T1,T2,T3] {
+impl<T0,T1,T2,T3> From<hlist::ty![T0,T1,T2,T3]>
+for (T0,T1,T2,T3) {
     #[inline(always)]
-    fn into(self) -> (T0,T1,T2,T3) {
-        let hlist::pat![t0,t1,t2,t3] = self;
+    fn from(value:hlist::ty![T0,T1,T2,T3]) -> Self {
+        let hlist::pat![t0,t1,t2,t3] = value;
         (t0,t1,t2,t3)
     }
 }
 
-impl<T0,T1,T2,T3,T4> Into<(T0,T1,T2,T3,T4)>
-for hlist::ty![T0,T1,T2,T3,T4] {
+impl<T0,T1,T2,T3,T4> From<hlist::ty![T0,T1,T2,T3,T4]>
+for (T0,T1,T2,T3,T4) {
     #[inline(always)]
-    fn into(self) -> (T0,T1,T2,T3,T4) {
-        let hlist::pat![t0,t1,t2,t3,t4] = self;
+    fn from(value:hlist::ty![T0,T1,T2,T3,T4]) -> Self {
+        let hlist::pat![t0,t1,t2,t3,t4] = value;
         (t0,t1,t2,t3,t4)
     }
 }
 
-impl<T0,T1,T2,T3,T4,T5> Into<(T0,T1,T2,T3,T4,T5)>
-for hlist::ty![T0,T1,T2,T3,T4,T5] {
+impl<T0,T1,T2,T3,T4,T5> From<hlist::ty![T0,T1,T2,T3,T4,T5]>
+for (T0,T1,T2,T3,T4,T5) {
     #[inline(always)]
-    fn into(self) -> (T0,T1,T2,T3,T4,T5) {
-        let hlist::pat![t0,t1,t2,t3,t4,t5] = self;
+    fn from(value:hlist::ty![T0,T1,T2,T3,T4,T5]) -> Self {
+        let hlist::pat![t0,t1,t2,t3,t4,t5] = value;
         (t0,t1,t2,t3,t4,t5)
     }
 }
 
-impl<T0,T1,T2,T3,T4,T5,T6> Into<(T0,T1,T2,T3,T4,T5,T6)>
-for hlist::ty![T0,T1,T2,T3,T4,T5,T6] {
+impl<T0,T1,T2,T3,T4,T5,T6> From<hlist::ty![T0,T1,T2,T3,T4,T5,T6]>
+for (T0,T1,T2,T3,T4,T5,T6) {
     #[inline(always)]
-    fn into(self) -> (T0,T1,T2,T3,T4,T5,T6) {
-        let hlist::pat![t0,t1,t2,t3,t4,t5,t6] = self;
+    fn from(value:hlist::ty![T0,T1,T2,T3,T4,T5,T6]) -> Self {
+        let hlist::pat![t0,t1,t2,t3,t4,t5,t6] = value;
         (t0,t1,t2,t3,t4,t5,t6)
     }
 }
 
-impl<T0,T1,T2,T3,T4,T5,T6,T7> Into<(T0,T1,T2,T3,T4,T5,T6,T7)>
-for hlist::ty![T0,T1,T2,T3,T4,T5,T6,T7] {
+impl<T0,T1,T2,T3,T4,T5,T6,T7> From<hlist::ty![T0,T1,T2,T3,T4,T5,T6,T7]>
+for (T0,T1,T2,T3,T4,T5,T6,T7) {
     #[inline(always)]
-    fn into(self) -> (T0,T1,T2,T3,T4,T5,T6,T7) {
-        let hlist::pat![t0,t1,t2,t3,t4,t5,t6,t7] = self;
+    fn from(value:hlist::ty![T0,T1,T2,T3,T4,T5,T6,T7]) -> Self {
+        let hlist::pat![t0,t1,t2,t3,t4,t5,t6,t7] = value;
         (t0,t1,t2,t3,t4,t5,t6,t7)
     }
 }
 
-impl<T0,T1,T2,T3,T4,T5,T6,T7,T8> Into<(T0,T1,T2,T3,T4,T5,T6,T7,T8)>
-for hlist::ty![T0,T1,T2,T3,T4,T5,T6,T7,T8] {
+impl<T0,T1,T2,T3,T4,T5,T6,T7,T8> From<hlist::ty![T0,T1,T2,T3,T4,T5,T6,T7,T8]>
+for (T0,T1,T2,T3,T4,T5,T6,T7,T8) {
     #[inline(always)]
-    fn into(self) -> (T0,T1,T2,T3,T4,T5,T6,T7,T8) {
-        let hlist::pat![t0,t1,t2,t3,t4,t5,t6,t7,t8] = self;
+    fn from(value:hlist::ty![T0,T1,T2,T3,T4,T5,T6,T7,T8]) -> Self {
+        let hlist::pat![t0,t1,t2,t3,t4,t5,t6,t7,t8] = value;
         (t0,t1,t2,t3,t4,t5,t6,t7,t8)
     }
 }
 
-impl<T0,T1,T2,T3,T4,T5,T6,T7,T8,T9> Into<(T0,T1,T2,T3,T4,T5,T6,T7,T8,T9)>
-for hlist::ty![T0,T1,T2,T3,T4,T5,T6,T7,T8,T9] {
+impl<T0,T1,T2,T3,T4,T5,T6,T7,T8,T9> From<hlist::ty![T0,T1,T2,T3,T4,T5,T6,T7,T8,T9]>
+for (T0,T1,T2,T3,T4,T5,T6,T7,T8,T9) {
     #[inline(always)]
-    fn into(self) -> (T0,T1,T2,T3,T4,T5,T6,T7,T8,T9) {
-        let hlist::pat![t0,t1,t2,t3,t4,t5,t6,t7,t8,t9] = self;
+    fn from(value:hlist::ty![T0,T1,T2,T3,T4,T5,T6,T7,T8,T9]) -> Self {
+        let hlist::pat![t0,t1,t2,t3,t4,t5,t6,t7,t8,t9] = value;
         (t0,t1,t2,t3,t4,t5,t6,t7,t8,t9)
     }
 }
 
-impl<T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10> Into<(T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10)>
-for hlist::ty![T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10] {
+impl<T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10> From<hlist::ty![T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10]>
+for (T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10) {
     #[inline(always)]
-    fn into(self) -> (T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10) {
-        let hlist::pat![t0,t1,t2,t3,t4,t5,t6,t7,t8,t9,t10] = self;
+    fn from(value:hlist::ty![T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10]) -> Self {
+        let hlist::pat![t0,t1,t2,t3,t4,t5,t6,t7,t8,t9,t10] = value;
         (t0,t1,t2,t3,t4,t5,t6,t7,t8,t9,t10)
     }
 }
 
-impl<T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11> Into<(T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11)>
-for hlist::ty![T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11] {
+impl<T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11> From<hlist::ty![T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11]>
+for (T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11) {
     #[inline(always)]
-    fn into(self) -> (T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11) {
-        let hlist::pat![t0,t1,t2,t3,t4,t5,t6,t7,t8,t9,t10,t11] = self;
+    fn from(value:hlist::ty![T0,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11]) -> Self {
+        let hlist::pat![t0,t1,t2,t3,t4,t5,t6,t7,t8,t9,t10,t11] = value;
         (t0,t1,t2,t3,t4,t5,t6,t7,t8,t9,t10,t11)
     }
 }

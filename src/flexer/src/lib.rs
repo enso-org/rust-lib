@@ -1111,7 +1111,7 @@ where Definition : State,
         let current_match    = default();
 
         state_stack.reserve(constants::STATE_STACK_RESERVATION);
-        Flexer{state_stack,status,output,definition,current_match,logger}
+        Flexer{state_stack,status,output,current_match,logger,definition}
     }
 }
 
@@ -1237,9 +1237,9 @@ impl From<&usize> for SubStateId {
     }
 }
 
-impl Into<usize> for SubStateId {
-    fn into(self) -> usize {
-        self.0
+impl From<SubStateId> for usize {
+    fn from(value:SubStateId) -> Self {
+        value.0
     }
 }
 

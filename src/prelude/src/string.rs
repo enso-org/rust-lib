@@ -183,9 +183,9 @@ impl From<&&str> for ImString {
     }
 }
 
-impl Into<String> for ImString {
-    fn into(self) -> String {
-        match Rc::try_unwrap(self.content) {
+impl From<ImString> for String {
+    fn from(value:ImString) -> Self {
+        match Rc::try_unwrap(value.content) {
             Ok(str) => str,
             Err(rc) => rc.deref().clone(),
         }

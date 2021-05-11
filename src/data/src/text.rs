@@ -266,7 +266,7 @@ impls! { From + &From <Range<usize>> for Span { |range|
     Span::from_indices(Index::new(range.start), Index::new(range.end))
 }}
 
-impls! { Into + &Into <Range<usize>> for Span { |this|
+impls! { From + &From<Span> for Range<usize> { |this|
     this.range()
 }}
 
@@ -404,7 +404,7 @@ impl TextLocation {
     /// This operation involves iterating over content characters and is O(n).
     ///
     /// Behavior for out-of-bounds index conversion is unspecified but will never panic.
-    pub fn to_index(&self, content:impl AsRef<str>) -> Index {
+    pub fn to_index(self, content:impl AsRef<str>) -> Index {
         let line_index = match self.line {
             0 => 0,
             _ => {

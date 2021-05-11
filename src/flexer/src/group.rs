@@ -276,9 +276,9 @@ impl From<&usize> for Identifier {
     }
 }
 
-impl Into<usize> for Identifier {
-    fn into(self) -> usize {
-        self.0
+impl From<Identifier> for usize {
+    fn from(value:Identifier) -> Self {
+        value.0
     }
 }
 
@@ -353,10 +353,10 @@ impl Group {
 
 // === Trait Impls ===
 
-impl Into<Registry> for Group {
-    fn into(self) -> Registry {
+impl From<Group> for Registry {
+    fn from(value:Group) -> Self {
         let mut registry = Registry::default();
-        registry.add_group(self);
+        registry.add_group(value);
         registry
     }
 }

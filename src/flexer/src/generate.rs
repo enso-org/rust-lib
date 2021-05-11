@@ -38,10 +38,11 @@ pub fn specialize
 , output_type_name : impl Str
 ) -> Result<String,GenError> {
     let group_registry = definition.groups();
-    let mut body_items = Vec::new();
-    body_items.push(run_function(output_type_name)?);
-    body_items.push(run_current_state_function());
-    body_items.push(step(group_registry));
+    let mut body_items = vec![
+        run_function(output_type_name)?,
+        run_current_state_function(),
+        step(group_registry),
+    ];
     for group in group_registry.all().iter() {
         body_items.extend(automaton_for_group(group,group_registry)?)
     }
@@ -501,10 +502,10 @@ impl Branch {
 
 // === Trait Impls ===
 
-impl Into<Arm> for Branch {
-    fn into(self) -> Arm {
-        let body = self.body;
-        match self.range {
+impl From<Branch> for Arm {
+    fn from(value:Branch) -> Self {
+        let body = value.body;
+        match value.range {
             Some(range) => {
                 let range_start = Literal::u64_unsuffixed(*range.start());
                 let range_end   = Literal::u64_unsuffixed(*range.end());
@@ -550,5 +551,3 @@ pub fn str_to_path(str:impl Str) -> Result<Path,GenError> {
 pub fn show_code(tokens:&impl ToTokens) -> String {
     repr(tokens)
 }
-
-
