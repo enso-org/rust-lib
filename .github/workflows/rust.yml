@@ -18,7 +18,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        rustToolchain: [nightly-2020-12-29, nightly-2021-05-11]
+        rustToolchain: [nightly-2021-05-11]
     steps:
       - name: Checkout Library Sources
         uses: actions/checkout@v2
