@@ -3,11 +3,9 @@
 
 pub use enso_shapely_macros::*;
 
-use derivative::Derivative;
 use std::ops::Generator;
 use std::ops::GeneratorState;
 use std::pin::Pin;
-use std::marker::PhantomData;
 
 
 
@@ -19,24 +17,6 @@ use std::marker::PhantomData;
 #[derive(Debug)]
 pub struct GeneratingIterator<G: Generator>(pub G);
 
-// #TODO: Remove this version once the IDE main repo no longer needs it.
-// #TODO: See https://github.com/enso-org/ide/issues/1028 for the status of this.
-// Note that the version used to change implementation is a rough guesstimate , so there might be
-// a small range of nightlies around this date that does not work. If you run into this, please
-// refine the date as required.
-#[rustversion::before(2020-02-01)]
-impl<G> Iterator for GeneratingIterator<G>
-where G: Generator<Return = ()> + Unpin {
-    type Item = G::Yield;
-    fn next(&mut self) -> Option<Self::Item> {
-        match Pin::new(&mut self.0).resume() {
-            GeneratorState::Yielded(element) => Some(element),
-            _                                => None,
-        }
-    }
-}
-
-// #TODO: Make this the default version once the above version is removed.
 #[rustversion::since(2020-02-01)]
 impl<G> Iterator for GeneratingIterator<G>
 where G: Generator<Return = ()> + Unpin {
@@ -46,31 +26,6 @@ where G: Generator<Return = ()> + Unpin {
             GeneratorState::Yielded(element) => Some(element),
             _                                => None,
         }
-    }
-}
-
-
-
-// =====================
-// === EmptyIterator ===
-// =====================
-
-/// An `Iterator` type that yields no values of the given type `T`.
-#[derive(Derivative)]
-#[derivative(Debug,Default(bound=""))]
-pub struct EmptyIterator<T>(PhantomData<T>);
-
-impl<T> EmptyIterator<T> {
-    /// Create a new empty iterator.
-    pub fn new() -> Self {
-        Default::default()
-    }
-}
-
-impl<T> Iterator for EmptyIterator<T> {
-    type Item = T;
-    fn next(&mut self) -> Option<Self::Item> {
-        None
     }
 }
 
@@ -86,10 +41,10 @@ mod tests {
 
     #[test]
     fn empty_iterator_works_for_any_type() {
-        for elem in EmptyIterator::new() {
+        for elem in std::iter::empty() {
             elem: i32;
         }
-        for elem in EmptyIterator::new() {
+        for elem in std::iter::empty() {
             elem: String;
         }
     }

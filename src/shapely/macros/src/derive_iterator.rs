@@ -261,20 +261,20 @@ impl DerivingIterator<'_> {
                 Box<dyn Iterator<Item=&'t #opt_mut #target_param> + 't>;
         );
         // For types that use target type parameter, refer to their
-        // `IntoIterator` implementation. Otherwise, use `EmptyIterator`.
+        // `IntoIterator` implementation. Otherwise, use an empty iterator.
         let arms = data.variants.iter().map(|var| {
             let con  = &var.ident;
             let iter = if variant_depends_on(var, target_param) {
                 quote!(elem.into_iter())
             } else {
-                quote!(enso_shapely::EmptyIterator::new())
+                quote!(std::iter::empty())
             };
             quote!(#ident::#con(elem) => Box::new(#iter))
         });
 
         // match t {
         //     Foo::Con1(elem) => Box::new(elem.into_iter()),
-        //     Foo::Con2(elem) => Box::new(enso-shapely::EmptyIterator::new()),
+        //     Foo::Con2(elem) => Box::new(std::iter::empty()),
         // }
         let iter_body = quote!( match t {  #(#arms,)*  } );
         OutputParts{iterator_tydefs,iter_body,iterator_params}
@@ -297,8 +297,8 @@ impl DerivingIterator<'_> {
             field.yield_value(self.is_mut)
         }).collect_vec();
 
-        // enso-shapely::EmptyIterator::new()
-        let empty_body = quote! { enso_shapely::EmptyIterator::new() };
+        // std::iter::empty()
+        let empty_body = quote! { std::iter::empty() };
 
         // enso-shapely::GeneratingIterator(move || {
         //     yield &t.foo;
@@ -446,4 +446,3 @@ pub fn derive
 //     Con1(Bar<T>),
 //     Con2(Baz),
 // }
-
