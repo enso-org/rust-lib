@@ -17,7 +17,6 @@ use std::pin::Pin;
 #[derive(Debug)]
 pub struct GeneratingIterator<G: Generator>(pub G);
 
-#[rustversion::since(2020-02-01)]
 impl<G> Iterator for GeneratingIterator<G>
 where G: Generator<Return = ()> + Unpin {
     type Item = G::Yield;
@@ -38,16 +37,6 @@ where G: Generator<Return = ()> + Unpin {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn empty_iterator_works_for_any_type() {
-        for elem in std::iter::empty() {
-            elem: i32;
-        }
-        for elem in std::iter::empty() {
-            elem: String;
-        }
-    }
 
     #[test]
     fn generating_iterator_works() {
