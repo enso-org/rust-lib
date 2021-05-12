@@ -4,7 +4,7 @@ use proc_macro2::Ident;
 
 pub fn overlappable
 ( attrs : proc_macro::TokenStream
-  , input : proc_macro::TokenStream
+, input : proc_macro::TokenStream
 ) -> proc_macro::TokenStream {
     let _attrs: TokenStream = attrs.into();
     let decl     = syn::parse_macro_input!(input as syn::ItemImpl);
@@ -47,4 +47,3 @@ pub fn overlappable
 //    println!("{}", output_tmp);
     output.into()
 }
-

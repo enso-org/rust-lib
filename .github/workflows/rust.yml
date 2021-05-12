@@ -18,7 +18,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        rustToolchain: [nightly-2021-05-11]
+        rustToolchain: [nightly-2021-05-12]
     steps:
       - name: Checkout Library Sources
         uses: actions/checkout@v2
@@ -48,7 +48,7 @@ jobs:
       - name: Check Code
         uses: actions-rs/cargo@v1
         with:
-          command: check
+          command: check --all-targets
 
   lint:
     name: Lint

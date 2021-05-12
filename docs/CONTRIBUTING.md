@@ -121,8 +121,8 @@ git clone git@github.com:enso-org/rust-lib.git
 You can get set up by running the following commands in the cloned repository.
 
 ```bash
-rustup toolchain install nightly-2019-11-04
-rustup override set nightly-2019-11-04
+rustup toolchain install nightly-2021-05-12
+rustup override set nightly-2021-05-12
 rustup component add clippy
 ```
 

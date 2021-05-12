@@ -182,7 +182,7 @@ branches:
         # Require branches to be up to date before merging.
         strict: true
         contexts:
-          - "Check"
+          - "Check (nightly-2021-05-12)"
           - "Lint"
           - "Test Native (macOS-latest)"
           - "Test Native (ubuntu-latest)"
