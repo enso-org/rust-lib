@@ -141,7 +141,7 @@ before filing an issue with us.
   channel`: The version of `rustc`seen by`cargo` is not a nightly build, and a
   nightly build is required.
 - **Compile Errors:** Please check that you are on the correct `rustc` nightly
-  (`nightly-2019-11-04`).
+  (`nightly-2021-05-12`).
 
 If your problem was not listed above, please
 [file a bug report](https://github.com/enso-org/rust-lib/issues/new?assignees=&labels=Type%3A+Bug&template=bug-report.md&title=)
