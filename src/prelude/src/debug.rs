@@ -1,3 +1,5 @@
+pub mod logging;
+
 use crate::*;
 
 #[cfg(target_arch="wasm32")]

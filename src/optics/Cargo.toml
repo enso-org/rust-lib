@@ -20,4 +20,4 @@ publish = true
 [features]
 
 [dependencies]
-enso-prelude = { version = "^0.2.0", path = "../prelude" }
+enso-prelude = { version = "^0.2.1", path = "../prelude" }
