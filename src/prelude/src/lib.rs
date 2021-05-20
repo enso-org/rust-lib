@@ -11,10 +11,10 @@
 #![warn(missing_debug_implementations)]
 #![warn(unsafe_code)]
 
-mod debug;
 mod clone;
 mod collections;
 mod data;
+pub mod debug;
 mod macros;
 mod option;
 mod phantom;
