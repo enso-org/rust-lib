@@ -24,7 +24,7 @@
 /// nested macro.
 macro_rules! define_debug_macros {
     ($d:tt $([$lower:ident $upper:ident $color:ident])*) => {$(
-        #[doc="Writes given text either to the stdout (non-wasm) or Web Console (wasm)."]
+        /// Writes given text either to the stdout (non-wasm) or Web Console (wasm).
         pub fn $lower(text:impl AsRef<str>) {
             cfg_if::cfg_if! {
                 if #[cfg(target_arch="wasm32")] {
@@ -37,9 +37,9 @@ macro_rules! define_debug_macros {
             }
         }
 
-        #[doc="Special logging macro that prints to the Web Console on wasm targets and stdout \
-         otherwise. It is supposed to be used only for development purposes and shouldn't be \
-         present in a production-ready code."]
+        /// Special logging macro that prints to the Web Console on wasm targets and stdout
+        /// otherwise. It is supposed to be used only for development purposes and shouldn't be
+        /// present in a production-ready code.
         #[macro_export] macro_rules! $upper  {
             ($d($d arg:tt)*) => {
                 $crate::debug::logging:: $lower(format!($d ($d arg,)*))
