@@ -40,9 +40,10 @@ macro_rules! define_debug_macros {
         /// Special logging macro that prints to the Web Console on wasm targets and stdout
         /// otherwise. It is supposed to be used only for development purposes and shouldn't be
         /// present in a production-ready code.
+        /// Macro follows `iformat` formatting convention.
         #[macro_export] macro_rules! $upper  {
             ($d($d arg:tt)*) => {
-                $crate::debug::logging:: $lower(format!($d ($d arg,)*))
+                $crate::debug::logging:: $lower($crate::iformat!($d ($d arg)*))
             }
         }
     )*}
@@ -66,18 +67,22 @@ mod tests {
 
     #[test]
     fn native_calls() {
-        TRACE!("foo");
-        DEBUG!("foo");
-        INFO!("foo");
-        WARNING!("foo");
-        ERROR!("foo");
+        let var = 39;
+        TRACE!("test");
+        DEBUG!("Using new iformat syntax: var = " var ". Is that much?");
+        INFO!("Using old iformat syntax: var = {var}. Is that much?");
+        WARNING!("test");
+        ERROR!("test");
     }
     #[wasm_bindgen_test]
     fn wasm_calls() {
-        TRACE!("foo");
-        DEBUG!("foo");
-        INFO!("foo");
-        WARNING!("foo");
-        ERROR!("foo");
+        let var = 39;
+        TRACE!("test");
+        DEBUG!("Using new iformat syntax: var = " var ". Is that much?");
+        INFO!("Using old iformat syntax: var = {var}. Is that much?");
+        DEBUG!("test");
+        INFO!("test");
+        WARNING!("test");
+        ERROR!("test");
     }
 }

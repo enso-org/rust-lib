@@ -108,7 +108,7 @@ impl CloneRef for TraceCopies {
         let handle   = self.handle.clone_ref();
         if let Some(name) = &*borrow {
             let bt = backtrace();
-            iprintln!("[{name}] Cloning {self.clone_id} -> {clone_id} {bt}");
+            DEBUG!("[{name}] Cloning {self.clone_id} -> {clone_id} {bt}");
         }
         Self {clone_id,handle}
     }
@@ -120,7 +120,7 @@ impl Drop for TraceCopies {
         if let Some(name) = &*borrow {
             let bt        = backtrace();
             let instances = Rc::strong_count(&self.handle) - 1;
-            iprintln!("[{name}] Dropping {self.clone_id}; instances left: {instances} {bt}");
+            DEBUG!("[{name}] Dropping {self.clone_id}; instances left: {instances} {bt}");
         }
     }
 }
