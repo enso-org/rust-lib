@@ -37,17 +37,29 @@ macro_rules! define_debug_macros {
             }
         }
 
-        /// Special logging macro that prints to the Web Console on wasm targets and stdout
-        /// otherwise. It is supposed to be used only for development purposes and shouldn't be
-        /// present in a production-ready code.
-        /// Macro follows `iformat` formatting convention.
-        #[macro_export] macro_rules! $upper  {
-            ($d($d arg:tt)*) => {
-                $crate::debug::logging:: $lower($crate::iformat!($d ($d arg)*))
-            }
-        }
+        // FIXME [mwu] Should be restored. See [Clippy ICE workaround]
+        // /// Special logging macro that prints to the Web Console on wasm targets and stdout
+        // /// otherwise. It is supposed to be used only for development purposes and shouldn't be
+        // /// present in a production-ready code.
+        // /// Macro follows `iformat` formatting convention.
+        // #[macro_export] macro_rules! $upper  {
+        //     ($d($d arg:tt)*) => {
+        //         $crate::debug::logging:: $lower($crate::iformat!($d ($d arg)*))
+        //     }
+        // }
     )*}
 }
+
+// FIXME [mwu] Should be removed. See [Clippy ICE workaround]
+mod manually_expanded;
+
+// Note [Clippy ICE workaround]
+// ~~~~~~~~~~~~~~~~~~~~~
+// The recent Clippy introduced ICE that happens when other crate uses debug macros in a lambda.
+// To workaround this we need to define them manually, rather than with `define_debug_macros`.
+// When https://github.com/rust-lang/rust-clippy/issues/7272 is resolved, we should bump and:
+// 1) uncomment the second part of `define_debug_macros`;
+// 2) remove the `manually_expanded` module altogether.
 
 define_debug_macros!{$
     [trace TRACE   purple]
@@ -59,6 +71,7 @@ define_debug_macros!{$
 
 #[cfg(test)]
 mod tests {
+    use crate::*;
     use wasm_bindgen_test::*;
     wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
 
@@ -80,8 +93,6 @@ mod tests {
         TRACE!("test");
         DEBUG!("Using new iformat syntax: var = " var ". Is that much?");
         INFO!("Using old iformat syntax: var = {var}. Is that much?");
-        DEBUG!("test");
-        INFO!("test");
         WARNING!("test");
         ERROR!("test");
     }
