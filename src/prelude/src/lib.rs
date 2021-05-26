@@ -80,7 +80,7 @@ use std::cell::UnsafeCell;
 /// apply to internal mutability of the wrapped data. A good use case of this structure is when you
 /// want to pass an ownership to a structure, allow access all its public fields, but do not allow
 /// their modification.
-#[derive(Clone,Copy,Default)]
+#[derive(Clone,Copy,Default,Eq,PartialEq)]
 pub struct Immutable<T> {
     data : T
 }
