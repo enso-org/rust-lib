@@ -220,7 +220,8 @@ impl PartialEq<ImString> for String {
 macro_rules! im_string_newtype {
     ($($(#$meta:tt)* $name:ident),* $(,)?) => {$(
         $(#$meta)*
-        #[derive(Clone,CloneRef,Debug,Default,Eq,Hash,PartialEq,$crate::serde_reexports::Serialize,$crate::serde_reexports::Deserialize)]
+        #[derive(Clone,CloneRef,Debug,Default,Eq,Hash,PartialEq)]
+        #[derive($crate::serde_reexports::Serialize,$crate::serde_reexports::Deserialize)]
         pub struct $name {
             content : ImString
         }
